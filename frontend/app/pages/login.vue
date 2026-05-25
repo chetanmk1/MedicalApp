@@ -51,6 +51,12 @@
               </template>
             </q-input>
 
+            <div class="text-right q-mt-xs">
+              <router-link to="/forgot-password" class="text-primary text-caption font-weight-medium text-decoration-none">
+                Forgot Password?
+              </router-link>
+            </div>
+
             <div class="q-pt-md">
               <q-btn
                 unelevated

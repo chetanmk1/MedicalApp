@@ -44,7 +44,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   }
 
   // 3. Define access control paths
-  const publicPaths = ['/', '/login', '/register', '/maintenance'];
+  const publicPaths = ['/', '/login', '/register', '/maintenance', '/forgot-password', '/reset-password'];
   const isPublic = publicPaths.includes(to.path);
 
   if (!authStore.isLoggedIn && !isPublic) {

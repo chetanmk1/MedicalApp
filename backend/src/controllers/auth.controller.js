@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/User.js';
+import { sendMail } from '../utils/mailer.js';
 
 // Helper to generate access token
 const generateAccessToken = (userId) => {
@@ -211,6 +213,8 @@ export const logout = async (req, res) => {
 // @desc    Get current user profile
 // @route   GET /api/auth/me
 // @access  Private
+// @route   GET /api/auth/me
+// @access  Private
 export const getMe = async (req, res) => {
   try {
     res.json({
@@ -228,5 +232,255 @@ export const getMe = async (req, res) => {
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error, profiles failed' });
+  }
+};
+
+// @desc    Setup the initial Super Admin account (or register one using a secret setup token)
+// @route   POST /api/auth/setup-super-admin
+// @access  Public (Protected by secret token or one-time execution)
+export const setupSuperAdmin = async (req, res) => {
+  try {
+    const { name, email, password, phone } = req.body;
+
+    if (!name || !email || !password || !phone) {
+      return res.status(400).json({ message: 'Please provide all details (name, email, password, phone)' });
+    }
+
+    // 1. Verify token if configured in env, OR verify if super admin already exists
+    const setupToken = process.env.SUPER_ADMIN_SETUP_TOKEN;
+    const reqToken = req.headers['x-setup-token'];
+
+    const superAdminExists = await User.findOne({ role: 'super_admin' });
+
+    // If setup token is defined, require it.
+    // If not defined, we only allow this route if no super_admin exists in the DB.
+    if (setupToken) {
+      if (reqToken !== setupToken) {
+        return res.status(401).json({ message: 'Unauthorized: Invalid or missing X-Setup-Token' });
+      }
+    } else {
+      if (superAdminExists) {
+        return res.status(403).json({ message: 'Forbidden: Super Admin already exists. For security reasons, setup is disabled.' });
+      }
+    }
+
+    // 2. Check if email already taken
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // 3. Create Super Admin
+    const user = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      role: 'super_admin',
+      status: 'active'
+    });
+
+    // 4. Return user and token
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(201).json({
+      message: 'Super Admin registered successfully',
+      token: accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('Setup Super Admin error:', error);
+    res.status(500).json({ message: 'Server error during setup', error: error.message });
+  }
+};
+
+// @desc    Forgot password - Request reset token
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Please provide email' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // For security, return 200 even if user doesn't exist so we don't leak user existence
+      return res.json({ message: 'If an account exists with this email, a password reset link has been sent.' });
+    }
+
+    // Get reset token
+    const resetToken = user.getResetPasswordToken();
+
+    // Save to DB
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset URL (points to frontend route)
+    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+
+    const html = `
+      <h1>Password Reset Request</h1>
+      <p>You are receiving this email because you (or someone else) requested a password reset for your account.</p>
+      <p>Please click the link below, or paste it into your browser, to complete the process:</p>
+      <a href="${resetUrl}" target="_blank">${resetUrl}</a>
+      <p>This link is valid for 1 hour. If you did not request this, please ignore this email.</p>
+    `;
+
+    try {
+      await sendMail({
+        to: user.email,
+        subject: 'MedBook - Password Reset Link',
+        html,
+      });
+
+      res.json({ message: 'Password reset link sent to your email.' });
+    } catch (err) {
+      console.error('Mail sending error:', err);
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(500).json({ message: 'Email could not be sent' });
+    }
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error during forgot password' });
+  }
+};
+
+// @desc    Reset password
+// @route   POST /api/auth/reset-password
+// @access  Public
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Missing token or new password' });
+    }
+
+    // Hash the token to match what's in the DB
+    const resetPasswordToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    // Set new password
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
+    res.json({ message: 'Password reset successful! You can now log in with your new password.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error during password reset', error: error.message });
+  }
+};
+
+// @desc    Update current user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { name, email, phone, specialization } = req.body;
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (user.role === 'doctor' && specialization) {
+      user.specialization = specialization;
+    }
+
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email is already taken by another user' });
+      }
+      user.email = email;
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        clinicId: user.clinicId,
+        specialization: user.specialization,
+        phone: user.phone,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error during profile update', error: error.message });
+  }
+};
+
+// @desc    Update password (when logged in)
+// @route   PUT /api/auth/update-password
+// @access  Private
+export const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Please provide current and new password' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid current password' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Update password error:', error);
+    res.status(500).json({ message: 'Server error during password update', error: error.message });
   }
 };

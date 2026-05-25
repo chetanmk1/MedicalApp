@@ -31,6 +31,13 @@
                   </q-item-section>
                 </q-item>
                 <q-separator />
+                <q-item clickable v-close-popup to="/profile">
+                  <q-item-section avatar>
+                    <q-icon name="settings" color="primary" />
+                  </q-item-section>
+                  <q-item-section class="font-weight-medium">Account Settings</q-item-section>
+                </q-item>
+                <q-separator />
                 <q-item clickable v-close-popup @click="logout">
                   <q-item-section avatar>
                     <q-icon name="logout" color="negative" />
@@ -86,6 +93,13 @@
               <q-icon name="dashboard" />
             </q-item-section>
             <q-item-section>Dashboard</q-item-section>
+          </q-item>
+          
+          <q-item clickable v-close-popup to="/profile">
+            <q-item-section avatar>
+              <q-icon name="settings" />
+            </q-item-section>
+            <q-item-section>Account Settings</q-item-section>
           </q-item>
           
           <q-separator class="q-my-sm" />
