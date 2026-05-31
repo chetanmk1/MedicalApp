@@ -148,40 +148,13 @@
 
           <!-- Clinic Admin Specific Menu -->
           <template v-if="userRole === 'clinic_admin'">
-            <q-item clickable @click="navigateToTab('users')" :active="activeTab === 'users'" active-class="text-primary font-weight-bold">
+            <q-item clickable @click="navigateToTab('management')" :active="activeTab !== 'dashboard'" active-class="text-primary font-weight-bold">
               <q-item-section avatar>
-                <q-icon name="people" />
+                <q-icon name="admin_panel_settings" />
               </q-item-section>
-              <q-item-section v-if="!miniState">Doctors & Staff</q-item-section>
+              <q-item-section v-if="!miniState">Clinic Management</q-item-section>
               <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[10, 10]">
-                Doctors & Staff
-              </q-tooltip>
-            </q-item>
-            <q-item clickable @click="navigateToTab('schedules')" :active="activeTab === 'schedules'" active-class="text-primary font-weight-bold">
-              <q-item-section avatar>
-                <q-icon name="schedule" />
-              </q-item-section>
-              <q-item-section v-if="!miniState">Configure Schedules</q-item-section>
-              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[10, 10]">
-                Configure Schedules
-              </q-tooltip>
-            </q-item>
-            <q-item clickable @click="navigateToTab('profile')" :active="activeTab === 'profile'" active-class="text-primary font-weight-bold">
-              <q-item-section avatar>
-                <q-icon name="business" />
-              </q-item-section>
-              <q-item-section v-if="!miniState">Clinic Profile</q-item-section>
-              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[10, 10]">
-                Clinic Profile
-              </q-tooltip>
-            </q-item>
-            <q-item clickable @click="navigateToTab('bookings')" :active="activeTab === 'bookings'" active-class="text-primary font-weight-bold">
-              <q-item-section avatar>
-                <q-icon name="event" />
-              </q-item-section>
-              <q-item-section v-if="!miniState">Bookings Ledger</q-item-section>
-              <q-tooltip v-if="miniState" anchor="center right" self="center left" :offset="[10, 10]">
-                Bookings Ledger
+                Clinic Management
               </q-tooltip>
             </q-item>
           </template>

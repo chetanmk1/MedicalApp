@@ -11,6 +11,7 @@
         align="justify"
         narrow-indicator
       >
+        <q-tab name="dashboard" label="Dashboard" icon="dashboard" />
         <q-tab name="appointments" label="My Appointments" icon="event" />
         <q-tab name="availability" label="My Schedule Setup" icon="schedule" />
       </q-tabs>
@@ -18,6 +19,15 @@
       <q-separator />
 
       <q-tab-panels v-model="tab" animated>
+        <!-- Empty Dashboard Panel for future analytics -->
+        <q-tab-panel name="dashboard" class="q-gutter-y-lg flex flex-center" style="min-height: 400px;">
+          <div class="text-center text-grey-6">
+            <q-icon name="analytics" size="64px" class="q-mb-md" />
+            <div class="text-h6">Dashboard Overview</div>
+            <p>Analytics, graphs, and statistics will be displayed here in the future.</p>
+          </div>
+        </q-tab-panel>
+
         <!-- Doctor Appointments Panel -->
         <q-tab-panel name="appointments" class="q-gutter-y-md">
           <div class="row justify-between items-center q-mb-md">
@@ -169,11 +179,6 @@ const { $api } = useNuxtApp();
 
 const { activeTab: tab } = useDashboardTab();
 
-watch(tab, (newVal) => {
-  if (newVal === 'dashboard') {
-    tab.value = 'appointments';
-  }
-});
 
 const appointments = ref([]);
 const savingSchedule = ref(false);

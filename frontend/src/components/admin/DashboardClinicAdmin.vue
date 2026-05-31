@@ -9,10 +9,19 @@
       </div>
     </div>
 
+    <!-- Empty Dashboard Panel for future analytics -->
+    <div v-if="activeTab === 'dashboard'" class="q-gutter-y-lg flex flex-center" style="min-height: 400px;">
+      <div class="text-center text-grey-6">
+        <q-icon name="analytics" size="64px" class="q-mb-md" />
+        <div class="text-h6">Dashboard Overview</div>
+        <p>Analytics, graphs, and statistics will be displayed here in the future.</p>
+      </div>
+    </div>
+
     <!-- Main Navigation Tabs -->
-    <q-card flat bordered style="border-radius: 16px;">
+    <q-card v-else flat bordered style="border-radius: 16px;">
       <q-tabs
-        v-model="tab"
+        v-model="innerTab"
         dense
         class="text-grey"
         active-color="primary"
@@ -28,7 +37,8 @@
 
       <q-separator />
 
-      <q-tab-panels v-model="tab" animated>
+      <q-tab-panels v-model="innerTab" animated>
+
         <!-- Clinic Profile Panel -->
         <q-tab-panel name="profile" class="q-gutter-y-lg">
           <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
@@ -355,13 +365,8 @@ const authStore = useAuthStore();
 const { fetchSchedule, saveSchedule } = useDoctors();
 const { appointments, fetchAppointments, cancelAppointment, rescheduleAppointment } = useAppointments();
 
-const { activeTab: tab } = useDashboardTab();
-
-watch(tab, (newVal) => {
-  if (newVal === 'dashboard') {
-    tab.value = 'profile';
-  }
-});
+const { activeTab } = useDashboardTab();
+const innerTab = ref('profile');
 
 const clinicInfo = ref(null);
 const staffUsers = ref([]);
@@ -414,8 +419,8 @@ const doctorsList = computed(() => {
 });
 
 onMounted(() => {
-  if (tab.value === 'dashboard' || !['profile', 'users', 'schedules', 'bookings'].includes(tab.value)) {
-    tab.value = 'profile';
+  if (innerTab.value === 'dashboard' || !['profile', 'users', 'schedules', 'bookings'].includes(innerTab.value)) {
+    innerTab.value = 'profile';
   }
   fetchClinicProfile();
   fetchStaffUsers();
