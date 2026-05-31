@@ -343,18 +343,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useDoctors } from '~/composables/useDoctors';
 import { useAppointments } from '~/composables/useAppointments';
 import { useQuasar } from 'quasar';
+import { useDashboardTab } from '~/composables/useDashboardTab';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 const { fetchSchedule, saveSchedule } = useDoctors();
 const { appointments, fetchAppointments, cancelAppointment, rescheduleAppointment } = useAppointments();
 
-const tab = ref('profile');
+const { activeTab: tab } = useDashboardTab();
+
+watch(tab, (newVal) => {
+  if (newVal === 'dashboard') {
+    tab.value = 'profile';
+  }
+});
+
 const clinicInfo = ref(null);
 const staffUsers = ref([]);
 
@@ -406,6 +414,9 @@ const doctorsList = computed(() => {
 });
 
 onMounted(() => {
+  if (tab.value === 'dashboard' || !['profile', 'users', 'schedules', 'bookings'].includes(tab.value)) {
+    tab.value = 'profile';
+  }
   fetchClinicProfile();
   fetchStaffUsers();
   loadAppointments();

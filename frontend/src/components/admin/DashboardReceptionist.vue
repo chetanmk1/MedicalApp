@@ -8,9 +8,66 @@
       <q-btn flat icon="refresh" color="primary" label="Reload Ledger" @click="loadAppointments" />
     </div>
 
-    <div class="row q-col-gutter-lg">
-      <!-- Left side: Patient Lookup & Booking Desk -->
-      <div class="col-12 col-md-5">
+    <!-- Tab Panels for Receptionist -->
+    <q-tab-panels v-model="tab" animated class="bg-transparent" style="overflow: visible;">
+      <!-- Patient Lookup & Ledger Tab -->
+      <q-tab-panel name="lookup" class="q-pa-none">
+        <q-card flat bordered style="border-radius: 16px;">
+          <q-card-section class="text-subtitle1 font-weight-bold text-slate-800">
+            Appointments Ledger
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-pa-none">
+            <div v-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
+              No appointments recorded for today.
+            </div>
+
+            <q-list separator v-else style="border-radius: 12px;">
+              <q-item v-for="app in appointments" :key="app._id" class="q-py-md">
+                <q-item-section>
+                  <div class="row items-center q-gutter-x-sm">
+                    <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
+                    <q-chip size="sm" :color="getAppStatusColor(app.status)" text-color="white" :label="app.status.toUpperCase()" />
+                  </div>
+                  <q-item-label caption class="q-mt-xs">
+                    <strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})<br>
+                    <strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}<br>
+                    <strong>Phone:</strong> {{ app.patientId?.phone }}
+                  </q-item-label>
+                </q-item-section>
+
+                <q-item-section side>
+                  <div class="row items-center q-gutter-sm">
+                    <!-- Check-in Management -->
+                    <q-btn
+                      unelevated
+                      color="teal-8"
+                      label="Check In"
+                      size="sm"
+                      @click="handleCheckIn(app._id)"
+                      v-if="app.status === 'confirmed'"
+                    />
+                    
+                    <q-btn-dropdown flat dense color="grey-8" icon="more_vert">
+                      <q-list style="min-width: 150px;">
+                        <q-item clickable v-close-popup @click="openReschedule(app)">
+                          <q-item-section>Reschedule</q-item-section>
+                        </q-item>
+                        <q-item clickable v-close-popup @click="cancelApp(app._id)" class="text-negative">
+                          <q-item-section>Cancel</q-item-section>
+                        </q-item>
+                      </q-list>
+                    </q-btn-dropdown>
+                  </div>
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </q-card-section>
+        </q-card>
+      </q-tab-panel>
+
+      <!-- Walk-in Booking Tab -->
+      <q-tab-panel name="booking" class="q-pa-none">
         <q-card flat bordered style="border-radius: 16px;" class="q-pa-md glass-card">
           <q-card-section class="q-pb-none">
             <div class="text-h6 font-weight-bold text-slate-800">Walk-in Booking Desk</div>
@@ -133,64 +190,8 @@
             />
           </q-card-section>
         </q-card>
-      </div>
-
-      <!-- Right side: Ledger & Check-in Manager -->
-      <div class="col-12 col-md-7">
-        <q-card flat bordered style="border-radius: 16px;">
-          <q-card-section class="text-subtitle1 font-weight-bold text-slate-800">
-            Appointments Ledger
-          </q-card-section>
-          <q-separator />
-          <q-card-section class="q-pa-none">
-            <div v-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
-              No appointments recorded for today.
-            </div>
-
-            <q-list separator v-else>
-              <q-item v-for="app in appointments" :key="app._id" class="q-py-md">
-                <q-item-section>
-                  <div class="row items-center q-gutter-x-sm">
-                    <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
-                    <q-chip size="sm" :color="getAppStatusColor(app.status)" text-color="white" :label="app.status.toUpperCase()" />
-                  </div>
-                  <q-item-label caption class="q-mt-xs">
-                    <strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})<br>
-                    <strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}<br>
-                    <strong>Phone:</strong> {{ app.patientId?.phone }}
-                  </q-item-label>
-                </q-item-section>
-
-                <q-item-section side>
-                  <div class="row items-center q-gutter-sm">
-                    <!-- Check-in Management -->
-                    <q-btn
-                      unelevated
-                      color="teal-8"
-                      label="Check In"
-                      size="sm"
-                      @click="handleCheckIn(app._id)"
-                      v-if="app.status === 'confirmed'"
-                    />
-                    
-                    <q-btn-dropdown flat dense color="grey-8" icon="more_vert">
-                      <q-list style="min-width: 150px;">
-                        <q-item clickable v-close-popup @click="openReschedule(app)">
-                          <q-item-section>Reschedule</q-item-section>
-                        </q-item>
-                        <q-item clickable v-close-popup @click="cancelApp(app._id)" class="text-negative">
-                          <q-item-section>Cancel</q-item-section>
-                        </q-item>
-                      </q-list>
-                    </q-btn-dropdown>
-                  </div>
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
-    </div>
+      </q-tab-panel>
+    </q-tab-panels>
 
     <!-- Reschedule Dialog -->
     <q-dialog v-model="rescheduleDialog">
@@ -214,16 +215,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { usePatients } from '~/composables/usePatients';
 import { useAppointments } from '~/composables/useAppointments';
 import { useDoctors } from '~/composables/useDoctors';
 import { useQuasar } from 'quasar';
+import { useDashboardTab } from '~/composables/useDashboardTab';
 
 const $q = useQuasar();
 const { patients, searchPatients } = usePatients();
 const { appointments, fetchAppointments, createAppointment, cancelAppointment, rescheduleAppointment, checkInAppointment } = useAppointments();
 const { fetchDoctors, getAvailableSlots } = useDoctors();
+
+const { activeTab: tab } = useDashboardTab();
+
+watch(tab, (newVal) => {
+  if (newVal === 'dashboard') {
+    tab.value = 'lookup';
+  }
+});
 
 const searchQuery = ref('');
 const searching = ref(false);
@@ -262,6 +272,9 @@ const doctorOptions = computed(() => {
 });
 
 onMounted(() => {
+  if (tab.value === 'dashboard' || !['lookup', 'booking'].includes(tab.value)) {
+    tab.value = 'lookup';
+  }
   loadAppointments();
   loadClinicDoctors();
 });
@@ -276,7 +289,6 @@ const loadAppointments = async () => {
 
 const loadClinicDoctors = async () => {
   try {
-    // Fetches doctors tied to the receptionist's clinic (automatic on backend based on token)
     doctors.value = await fetchDoctors();
   } catch (err) {
     console.error(err);
