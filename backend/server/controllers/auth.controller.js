@@ -242,17 +242,20 @@ export const setupSuperAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Please provide all details (name, email, password, phone)' });
     }
 
-    // 1. Verify token if configured in env, OR verify if super admin already exists
     const setupToken = process.env.SUPER_ADMIN_SETUP_TOKEN;
     const reqToken = req.headers['x-setup-token'];
-
     const superAdminExists = await User.findOne({ role: 'super_admin' });
 
-    // If setup token is defined, require it.
+    // If setup token is defined, require it to be a valid JWT signed with the setup token secret.
     // If not defined, we only allow this route if no super_admin exists in the DB.
     if (setupToken) {
-      if (reqToken !== setupToken) {
-        return res.status(401).json({ message: 'Unauthorized: Invalid or missing X-Setup-Token' });
+      if (!reqToken) {
+        return res.status(401).json({ message: 'Unauthorized: Missing X-Setup-Token header' });
+      }
+      try {
+        jwt.verify(reqToken, setupToken);
+      } catch (err) {
+        return res.status(401).json({ message: 'Unauthorized: Invalid or expired X-Setup-Token JWT signature', error: err.message });
       }
     } else {
       if (superAdminExists) {
