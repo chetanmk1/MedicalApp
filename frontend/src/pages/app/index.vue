@@ -13,30 +13,17 @@
     <!-- Search Section -->
     <div class="glass-card q-pa-lg">
       <div class="row q-col-gutter-md items-center">
-        <div class="col-12 col-sm-5">
+        <div class="col-12 col-sm-10">
           <q-input
-            v-model="searchDistrict"
+            v-model="searchClinicName"
             outlined
             dense
-            label="Search by District"
-            icon="place"
+            label="Search by Clinic Name"
             color="primary"
+            @keyup.enter="fetchClinics"
           >
             <template v-slot:prepend>
-              <q-icon name="explore" color="grey-6" />
-            </template>
-          </q-input>
-        </div>
-        <div class="col-12 col-sm-5">
-          <q-input
-            v-model="searchCity"
-            outlined
-            dense
-            label="Search by City"
-            color="primary"
-          >
-            <template v-slot:prepend>
-              <q-icon name="location_city" color="grey-6" />
+              <q-icon name="local_hospital" color="grey-6" />
             </template>
           </q-input>
         </div>
@@ -271,8 +258,7 @@ const authStore = useAuthStore();
 const { $api } = useNuxtApp();
 
 // Search / Filtering
-const searchDistrict = ref('');
-const searchCity = ref('');
+const searchClinicName = ref('');
 const clinics = ref([]);
 const selectedClinic = ref(null);
 const doctors = ref([]);
@@ -305,8 +291,7 @@ const fetchClinics = async () => {
   try {
     let url = '/clinics';
     const params = {};
-    if (searchCity.value) params.city = searchCity.value;
-    if (searchDistrict.value) params.district = searchDistrict.value;
+    if (searchClinicName.value) params.name = searchClinicName.value;
 
     const data = await $api(url, { params });
     clinics.value = data.clinics || [];

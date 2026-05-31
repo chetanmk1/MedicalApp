@@ -50,7 +50,7 @@
           
           <template v-else>
             <q-btn flat no-caps color="white" label="Login" to="/app/login" />
-            <q-btn unelevated no-caps color="white" text-color="emerald-9" label="Sign Up" to="/app/register" class="q-px-md bg-white font-weight-bold" style="border-radius: 8px;" />
+            <q-btn unelevated no-caps color="white" text-color="teal-9" label="Sign Up" to="/app/register" class="q-px-md font-weight-bold" style="border-radius: 8px;" />
           </template>
         </div>
 
