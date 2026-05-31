@@ -89,16 +89,16 @@
                   />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="newUser.name" outlined dense label="User Full Name" required />
+                  <q-input v-model="newUser.name" outlined dense label="User Full Name" required autocomplete="off" />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="newUser.email" outlined dense type="email" label="Email Address" required />
+                  <q-input v-model="newUser.email" outlined dense type="email" label="Email Address" required autocomplete="off" />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="newUser.password" outlined dense type="password" label="Password" required />
+                  <q-input v-model="newUser.password" outlined dense type="password" label="Password" required autocomplete="new-password" />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="newUser.phone" outlined dense label="Phone" required />
+                  <q-input v-model="newUser.phone" outlined dense label="Phone" required autocomplete="off" />
                 </div>
                 
                 <!-- Doctor Specific Field -->
@@ -516,6 +516,10 @@ const changeUserStatus = async (userId, status) => {
 
 // Schedulers
 const selectDocSchedule = async (doc) => {
+  if (selectedDocForSchedule.value?._id === doc._id) {
+    selectedDocForSchedule.value = null;
+    return;
+  }
   selectedDocForSchedule.value = doc;
   try {
     const data = await fetchSchedule(doc._id);

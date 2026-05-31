@@ -145,22 +145,22 @@
                 <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Onboard New Clinic</div>
                 <q-form @submit.prevent="submitClinic" class="row q-col-gutter-sm">
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="newClinic.name" outlined dense label="Clinic Name" required />
+                    <q-input v-model="newClinic.name" outlined dense label="Clinic Name" required autocomplete="off" />
                   </div>
                   <div class="col-12 col-sm-3">
-                    <q-input v-model="newClinic.city" outlined dense label="City" required />
+                    <q-input v-model="newClinic.city" outlined dense label="City" required autocomplete="off" />
                   </div>
                   <div class="col-12 col-sm-3">
-                    <q-input v-model="newClinic.district" outlined dense label="District" required />
+                    <q-input v-model="newClinic.district" outlined dense label="District" required autocomplete="off" />
                   </div>
                   <div class="col-12">
-                    <q-input v-model="newClinic.address" outlined dense label="Full Address" required />
+                    <q-input v-model="newClinic.address" outlined dense label="Full Address" required autocomplete="off" />
                   </div>
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="newClinic.phone" outlined dense label="Phone" required />
+                    <q-input v-model="newClinic.phone" outlined dense label="Phone" required autocomplete="off" />
                   </div>
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="newClinic.email" outlined dense type="email" label="Contact Email" required />
+                    <q-input v-model="newClinic.email" outlined dense type="email" label="Contact Email" required autocomplete="off" />
                   </div>
                   <div class="col-12 text-right q-pt-md">
                     <q-btn unelevated color="primary" type="submit" label="Register Clinic" :loading="submittingClinic" />
@@ -189,16 +189,16 @@
                     />
                   </div>
                   <div class="col-12 col-sm-6">
-                    <q-input v-model="newAdmin.name" outlined dense label="Admin Full Name" required />
+                    <q-input v-model="newAdmin.name" outlined dense label="Admin Full Name" required autocomplete="off" />
                   </div>
                   <div class="col-12 col-sm-4">
-                    <q-input v-model="newAdmin.email" outlined dense type="email" label="Email Address" required />
+                    <q-input v-model="newAdmin.email" outlined dense type="email" label="Email Address" required autocomplete="off" />
                   </div>
                   <div class="col-12 col-sm-4">
-                    <q-input v-model="newAdmin.password" outlined dense type="password" label="Admin Password" required />
+                    <q-input v-model="newAdmin.password" outlined dense type="password" label="Admin Password" required autocomplete="new-password" />
                   </div>
                   <div class="col-12 col-sm-4">
-                    <q-input v-model="newAdmin.phone" outlined dense label="Phone" required />
+                    <q-input v-model="newAdmin.phone" outlined dense label="Phone" required autocomplete="off" />
                   </div>
                   <div class="col-12 text-right q-pt-md">
                     <q-btn unelevated color="primary" type="submit" label="Create Admin" :loading="submittingAdmin" />
