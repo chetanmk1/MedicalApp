@@ -1,14 +1,14 @@
 <template>
   <q-layout view="hHh Lpr lFf" class="bg-mesh-gradient">
     <!-- Header -->
-    <q-header elevated class="bg-white text-slate-800" style="backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.9);">
+    <q-header elevated :style="patientHeaderStyle">
       <q-toolbar class="q-px-lg" style="height: 70px;">
         <!-- Logo -->
         <q-btn flat no-caps class="q-mr-sm" to="/">
           <q-avatar size="42px" class="q-mr-sm">
-            <q-icon name="healing" size="32px" class="text-primary" />
+            <q-icon name="healing" size="32px" class="text-white" />
           </q-avatar>
-          <div class="text-h6 font-weight-bold text-gradient" style="font-size: 1.4rem; letter-spacing: -0.5px;">
+          <div class="text-h6 font-weight-bold text-white" style="font-size: 1.4rem; letter-spacing: -0.5px;">
             MedBook
           </div>
         </q-btn>
@@ -17,16 +17,16 @@
 
         <!-- Navigation Links -->
         <div class="gt-xs row q-gutter-md items-center">
-          <q-btn flat no-caps color="grey-8" label="Find Clinic" to="/" />
+          <q-btn flat no-caps color="white" label="Find Clinic" to="/" />
           
           <template v-if="authStore.isLoggedIn">
-            <q-btn flat no-caps color="grey-8" label="Dashboard" :to="dashboardLink" />
+            <q-btn flat no-caps color="white" label="Dashboard" :to="dashboardLink" />
             
-            <q-btn-dropdown flat no-caps color="primary" icon="account_circle" :label="authStore.user?.name">
-              <q-list style="min-width: 180px;">
+            <q-btn-dropdown flat no-caps color="white" icon="account_circle" :label="authStore.user?.name">
+              <q-list style="min-width: 200px;">
                 <q-item class="q-py-md">
                   <q-item-section>
-                    <div class="text-subtitle2 font-weight-bold">{{ authStore.user?.name }}</div>
+                    <div class="text-subtitle2 font-weight-bold text-slate-800">{{ authStore.user?.name }}</div>
                     <div class="text-caption text-grey-7">{{ formatRole(authStore.user?.role) }}</div>
                   </q-item-section>
                 </q-item>
@@ -35,7 +35,7 @@
                   <q-item-section avatar>
                     <q-icon name="settings" color="primary" />
                   </q-item-section>
-                  <q-item-section class="font-weight-medium">Account Settings</q-item-section>
+                  <q-item-section class="font-weight-medium text-slate-800">Account Settings</q-item-section>
                 </q-item>
                 <q-separator />
                 <q-item clickable v-close-popup @click="logout">
@@ -49,8 +49,8 @@
           </template>
           
           <template v-else>
-            <q-btn flat no-caps color="primary" label="Login" to="/app/login" />
-            <q-btn unelevated no-caps color="primary" label="Sign Up" to="/app/register" class="q-px-md" style="border-radius: 8px;" />
+            <q-btn flat no-caps color="white" label="Login" to="/app/login" />
+            <q-btn unelevated no-caps color="white" text-color="teal-9" label="Sign Up" to="/app/register" class="q-px-md font-weight-bold" style="border-radius: 8px;" />
           </template>
         </div>
 
@@ -59,7 +59,7 @@
           flat
           dense
           round
-          class="lt-sm text-slate-800"
+          class="lt-sm text-white"
           icon="menu"
           aria-label="Menu"
           @click="toggleLeftDrawer"
@@ -154,17 +154,20 @@ const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 };
 
+const patientHeaderStyle = computed(() => {
+  // Premium emerald/teal gradient for patients
+  return 'background: linear-gradient(135deg, #064e3b 0%, #10b981 100%);';
+});
+
 const dashboardLink = computed(() => {
   const role = authStore.userRole;
   switch (role) {
     case 'super_admin':
-      return '/dashboard/super-admin';
     case 'clinic_admin':
-      return '/dashboard/clinic-admin';
     case 'doctor':
-      return '/dashboard/doctor';
     case 'staff':
-      return '/dashboard/clinic-admin';
+    case 'receptionist':
+      return '/admin/dashboard';
     case 'patient':
       return '/dashboard/patient';
     default:

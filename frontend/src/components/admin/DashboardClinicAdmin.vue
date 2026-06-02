@@ -9,10 +9,19 @@
       </div>
     </div>
 
+    <!-- Empty Dashboard Panel for future analytics -->
+    <div v-if="activeTab === 'dashboard'" class="q-gutter-y-lg flex flex-center" style="min-height: 400px;">
+      <div class="text-center text-grey-6">
+        <q-icon name="analytics" size="64px" class="q-mb-md" />
+        <div class="text-h6">Dashboard Overview</div>
+        <p>Analytics, graphs, and statistics will be displayed here in the future.</p>
+      </div>
+    </div>
+
     <!-- Main Navigation Tabs -->
-    <q-card flat bordered style="border-radius: 16px;">
+    <q-card v-else flat bordered style="border-radius: 16px;">
       <q-tabs
-        v-model="tab"
+        v-model="innerTab"
         dense
         class="text-grey"
         active-color="primary"
@@ -28,7 +37,8 @@
 
       <q-separator />
 
-      <q-tab-panels v-model="tab" animated>
+      <q-tab-panels v-model="innerTab" animated>
+
         <!-- Clinic Profile Panel -->
         <q-tab-panel name="profile" class="q-gutter-y-lg">
           <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
@@ -79,16 +89,16 @@
                   />
                 </div>
                 <div class="col-12 col-sm-6">
-                  <q-input v-model="newUser.name" outlined dense label="User Full Name" required />
+                  <q-input v-model="newUser.name" outlined dense label="User Full Name" required autocomplete="off" />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="newUser.email" outlined dense type="email" label="Email Address" required />
+                  <q-input v-model="newUser.email" outlined dense type="email" label="Email Address" required autocomplete="off" />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="newUser.password" outlined dense type="password" label="Password" required />
+                  <q-input v-model="newUser.password" outlined dense type="password" label="Password" required autocomplete="new-password" />
                 </div>
                 <div class="col-12 col-sm-4">
-                  <q-input v-model="newUser.phone" outlined dense label="Phone" required />
+                  <q-input v-model="newUser.phone" outlined dense label="Phone" required autocomplete="off" />
                 </div>
                 
                 <!-- Doctor Specific Field -->
@@ -237,7 +247,18 @@
 
                       <div v-for="(holiday, index) in scheduleForm.holidays" :key="index" class="row q-col-gutter-sm items-center q-mb-xs">
                         <div class="col-4">
-                          <q-input v-model="holiday.date" outlined dense type="date" label="Date" />
+                          <q-input v-model="holiday.date" outlined dense label="Date" readonly>
+                            <template v-slot:append>
+                              <q-icon name="event" class="cursor-pointer" />
+                            </template>
+                            <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                              <q-date v-model="holiday.date" mask="YYYY-MM-DD" class="full-width">
+                                <div class="row items-center justify-end">
+                                  <q-btn v-close-popup label="Close" color="primary" flat />
+                                </div>
+                              </q-date>
+                            </q-popup-proxy>
+                          </q-input>
                         </div>
                         <div class="col-6">
                           <q-input v-model="holiday.description" outlined dense label="Description / Reason" />
@@ -257,10 +278,32 @@
 
                       <div v-for="(leave, index) in scheduleForm.leaves" :key="index" class="row q-col-gutter-sm items-center q-mb-xs">
                         <div class="col-4">
-                          <q-input v-model="leave.startDate" outlined dense type="date" label="Start Date" />
+                          <q-input v-model="leave.startDate" outlined dense label="Start Date" readonly>
+                            <template v-slot:append>
+                              <q-icon name="event" class="cursor-pointer" />
+                            </template>
+                            <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                              <q-date v-model="leave.startDate" mask="YYYY-MM-DD" class="full-width">
+                                <div class="row items-center justify-end">
+                                  <q-btn v-close-popup label="Close" color="primary" flat />
+                                </div>
+                              </q-date>
+                            </q-popup-proxy>
+                          </q-input>
                         </div>
                         <div class="col-4">
-                          <q-input v-model="leave.endDate" outlined dense type="date" label="End Date" />
+                          <q-input v-model="leave.endDate" outlined dense label="End Date" readonly>
+                            <template v-slot:append>
+                              <q-icon name="event" class="cursor-pointer" />
+                            </template>
+                            <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                              <q-date v-model="leave.endDate" mask="YYYY-MM-DD" class="full-width">
+                                <div class="row items-center justify-end">
+                                  <q-btn v-close-popup label="Close" color="primary" flat />
+                                </div>
+                              </q-date>
+                            </q-popup-proxy>
+                          </q-input>
                         </div>
                         <div class="col-2">
                           <q-btn flat color="negative" icon="delete" dense @click="removeLeave(index)" />
@@ -329,7 +372,18 @@
         </q-card-section>
 
         <q-card-section class="q-gutter-y-md q-pt-md">
-          <q-input v-model="rescheduleForm.date" type="date" outlined dense label="New Date" />
+          <q-input v-model="rescheduleForm.date" outlined dense label="New Date" readonly>
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer" />
+            </template>
+            <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+              <q-date v-model="rescheduleForm.date" mask="YYYY-MM-DD" @update:model-value="fetchSlots" class="full-width">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-input>
           <q-input v-model="rescheduleForm.startTime" outlined dense label="New Start Time (HH:MM)" />
         </q-card-section>
 
@@ -343,18 +397,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useDoctors } from '~/composables/useDoctors';
 import { useAppointments } from '~/composables/useAppointments';
 import { useQuasar } from 'quasar';
+import { useDashboardTab } from '~/composables/useDashboardTab';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 const { fetchSchedule, saveSchedule } = useDoctors();
 const { appointments, fetchAppointments, cancelAppointment, rescheduleAppointment } = useAppointments();
 
-const tab = ref('profile');
+const { activeTab } = useDashboardTab();
+const innerTab = ref('profile');
+
 const clinicInfo = ref(null);
 const staffUsers = ref([]);
 
@@ -406,6 +463,9 @@ const doctorsList = computed(() => {
 });
 
 onMounted(() => {
+  if (innerTab.value === 'dashboard' || !['profile', 'users', 'schedules', 'bookings'].includes(innerTab.value)) {
+    innerTab.value = 'profile';
+  }
   fetchClinicProfile();
   fetchStaffUsers();
   loadAppointments();
@@ -500,6 +560,10 @@ const changeUserStatus = async (userId, status) => {
 
 // Schedulers
 const selectDocSchedule = async (doc) => {
+  if (selectedDocForSchedule.value?._id === doc._id) {
+    selectedDocForSchedule.value = null;
+    return;
+  }
   selectedDocForSchedule.value = doc;
   try {
     const data = await fetchSchedule(doc._id);

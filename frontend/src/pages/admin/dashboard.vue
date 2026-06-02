@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout name="admin">
+  <div>
     <div v-if="!userRole" class="row justify-center items-center" style="min-height: 50vh;">
       <q-spinner-dots color="primary" size="40px" />
     </div>
@@ -17,7 +17,7 @@
         <q-btn color="primary" label="Go Home" to="/app" />
       </div>
     </template>
-  </NuxtLayout>
+  </div>
 </template>
 
 <script setup>
@@ -27,9 +27,9 @@ import DashboardClinicAdmin from '~/components/admin/DashboardClinicAdmin.vue';
 import DashboardDoctor from '~/components/admin/DashboardDoctor.vue';
 import DashboardReceptionist from '~/components/admin/DashboardReceptionist.vue';
 
-// Enforce layout blank because we wrap page with NuxtLayout name="admin" directly
+// Use Nuxt standard layout definition to prevent hydration mismatches
 definePageMeta({
-  layout: false
+  layout: 'admin'
 });
 
 const { userRole } = useAuth();

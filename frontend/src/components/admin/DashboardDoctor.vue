@@ -1,178 +1,352 @@
 <template>
   <div class="q-gutter-y-lg">
-    <div class="row justify-between items-center">
-      <div>
-        <h1 class="text-h4 font-weight-bold text-slate-800 q-mb-none">Dr. {{ user?.name }}</h1>
-        <p class="text-subtitle2 text-grey-7">Doctor Consultation & Calendar Panel</p>
-      </div>
-      <q-btn flat icon="refresh" color="grey-6" label="Reload Appointments" @click="loadAppointments" />
-    </div>
+    <!-- Navigation Tabs -->
+    <q-card flat bordered style="border-radius: 16px;">
+      <q-tabs
+        v-model="tab"
+        dense
+        class="text-grey"
+        active-color="primary"
+        indicator-color="primary"
+        align="justify"
+        narrow-indicator
+      >
+        <q-tab name="dashboard" label="Dashboard" icon="dashboard" />
+        <q-tab name="appointments" label="My Appointments" icon="event" />
+        <q-tab name="availability" label="My Schedule Setup" icon="schedule" />
+      </q-tabs>
 
-    <div class="row q-col-gutter-lg">
-      <!-- Consultation List -->
-      <div class="col-12 col-md-7">
-        <q-card flat bordered style="border-radius: 16px;">
-          <q-card-section class="text-subtitle1 font-weight-bold text-slate-800">
-            Assigned Appointments ({{ appointments.length }})
-          </q-card-section>
-          <q-separator />
-          <q-card-section class="q-pa-none">
-            <div v-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
-              No appointments scheduled for you.
-            </div>
+      <q-separator />
 
-            <q-list separator v-else>
-              <q-item
-                v-for="app in appointments"
-                :key="app._id"
-                clickable
-                @click="selectAppointment(app)"
-                :active="selectedApp?._id === app._id"
-                active-class="bg-indigo-0"
-                class="q-py-md"
-              >
-                <q-item-section>
-                  <div class="row items-center q-gutter-x-sm">
-                    <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
-                    <q-chip size="sm" :color="getAppStatusColor(app.status)" text-color="white" :label="app.status.toUpperCase()" />
-                  </div>
-                  <q-item-label caption>
-                    <strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}<br>
-                    <strong>Phone:</strong> {{ app.patientId?.phone }}
-                    <div v-if="app.notes" class="q-mt-xs text-grey-7">
-                      <strong>Notes:</strong> {{ app.notes }}
-                    </div>
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section side v-if="app.status === 'checked_in'">
-                  <q-badge color="teal" label="READY" />
-                </q-item-section>
-              </q-item>
-            </q-list>
-          </q-card-section>
-        </q-card>
-      </div>
+      <q-tab-panels v-model="tab" animated>
+        <!-- Empty Dashboard Panel for future analytics -->
+        <q-tab-panel name="dashboard" class="q-gutter-y-lg flex flex-center" style="min-height: 400px;">
+          <div class="text-center text-grey-6">
+            <q-icon name="analytics" size="64px" class="q-mb-md" />
+            <div class="text-h6">Dashboard Overview</div>
+            <p>Analytics, graphs, and statistics will be displayed here in the future.</p>
+          </div>
+        </q-tab-panel>
 
-      <!-- Consultation Actions & Notes Desk -->
-      <div class="col-12 col-md-5">
-        <q-card flat bordered style="border-radius: 16px; min-height: 300px;" class="glass-card">
-          <template v-if="selectedApp">
-            <q-card-section class="bg-indigo-9 text-white">
-              <div class="text-subtitle1 font-weight-bold">Consultation Desk</div>
-              <div class="text-caption text-indigo-1">Patient: {{ selectedApp.patientId?.name }}</div>
-            </q-card-section>
+        <!-- Doctor Appointments Panel -->
+        <q-tab-panel name="appointments" class="q-gutter-y-md">
+          <div class="row justify-between items-center q-mb-md">
+            <div class="text-subtitle1 font-weight-bold text-slate-800">Booked Patients List</div>
+            <q-btn flat icon="refresh" color="grey-6" label="Reload" @click="fetchAppointments" />
+          </div>
 
-            <q-card-section class="q-gutter-y-md q-pt-md">
-              <div>
-                <strong>Appointment Time:</strong><br>
-                {{ formatDate(selectedApp.date) }} at {{ selectedApp.startTime }} - {{ selectedApp.endTime }}
-              </div>
+          <div v-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
+            No appointments booked with you yet.
+          </div>
 
-              <div>
-                <strong>Reason for Visit:</strong><br>
-                <span class="text-grey-7">{{ selectedApp.notes || 'None provided' }}</span>
-              </div>
+          <q-list v-else separator bordered style="border-radius: 12px;">
+            <q-item v-for="app in appointments" :key="app._id" class="q-py-md">
+              <q-item-section>
+                <div class="row items-center q-gutter-x-sm">
+                  <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
+                  <q-chip size="sm" :color="getAppStatusColor(app.status)" text-color="white" :label="app.status.toUpperCase()" />
+                </div>
+                <q-item-label caption class="q-mt-xs">
+                  <span><strong>Date:</strong> {{ formatDate(app.date) }}</span>
+                  <br />
+                  <span><strong>Time:</strong> {{ app.startTime }} - {{ app.endTime }}</span>
+                  <br />
+                  <span><strong>Phone:</strong> {{ app.patientId?.phone }}</span>
+                  <br v-if="app.notes" />
+                  <span v-if="app.notes"><strong>Reason:</strong> {{ app.notes }}</span>
+                </q-item-label>
+              </q-item-section>
 
-              <div v-if="selectedApp.status === 'completed'">
-                <q-banner dense rounded class="bg-green-1 text-green-9 q-mb-md">
-                  Consultation completed! Notes are locked.
-                </q-banner>
-                <strong>Consultation Notes:</strong><br>
-                <p class="text-grey-8 bg-grey-1 q-pa-sm rounded">{{ selectedApp.notes }}</p>
-              </div>
+              <q-item-section side v-if="app.status !== 'cancelled'">
+                <div class="row items-center q-gutter-sm">
+                  <q-btn unelevated dense color="negative" label="Cancel" size="sm" @click="cancelApp(app._id)" />
+                </div>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-tab-panel>
 
-              <q-form v-else @submit.prevent="handleComplete" class="q-gutter-y-md">
+        <!-- Availability Schedule Self Configuration Panel -->
+        <q-tab-panel name="availability" class="q-gutter-y-md">
+          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+            <q-card-section>
+              <q-form @submit.prevent="saveSchedule" class="q-gutter-y-md">
                 <q-input
-                  v-model="consultationNotes"
-                  type="textarea"
+                  v-model.number="scheduleForm.slotDuration"
                   outlined
-                  label="Enter Consultation & Prescription Notes"
-                  rows="5"
+                  dense
+                  type="number"
+                  label="Appointment Slot Duration (Minutes)"
                   required
-                  placeholder="Record diagnoses, details of visit, and treatment plans..."
                 />
-                
-                <q-btn
-                  unelevated
-                  color="positive"
-                  label="Mark Consultation Complete"
-                  type="submit"
-                  class="full-width font-weight-bold"
-                  :loading="completing"
-                  :disable="selectedApp.status === 'cancelled'"
-                />
+
+                <!-- Weekly Shifts -->
+                <div>
+                  <div class="row justify-between items-center q-mb-sm">
+                    <div class="text-subtitle2 font-weight-bold">Weekly shifts</div>
+                    <q-btn flat color="primary" dense label="Add Shift" icon="add" @click="addWeeklyShift" />
+                  </div>
+
+                  <div v-for="(shift, index) in scheduleForm.weeklyAvailability" :key="index" class="row q-col-gutter-sm items-center q-mb-sm">
+                    <div class="col-4">
+                      <q-select
+                        v-model="shift.dayOfWeek"
+                        outlined
+                        dense
+                        emit-value
+                        map-options
+                        :options="daysOfWeekOptions"
+                        label="Day"
+                      />
+                    </div>
+                    <div class="col-3" v-for="(slot, slotIndex) in shift.slots" :key="slotIndex">
+                      <div class="row q-col-gutter-xs">
+                        <div class="col-6">
+                          <q-input v-model="slot.startTime" outlined dense label="Start" placeholder="HH:MM" />
+                        </div>
+                        <div class="col-6">
+                          <q-input v-model="slot.endTime" outlined dense label="End" placeholder="HH:MM" />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-2">
+                      <q-btn flat color="negative" icon="delete" dense @click="removeWeeklyShift(index)" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Holidays Blocking -->
+                <div>
+                  <div class="row justify-between items-center q-mb-sm">
+                    <div class="text-subtitle2 font-weight-bold">Holidays & Closures</div>
+                    <q-btn flat color="primary" dense label="Add Holiday" icon="add" @click="addHoliday" />
+                  </div>
+
+                  <div v-for="(holiday, index) in scheduleForm.holidays" :key="index" class="row q-col-gutter-sm items-center q-mb-xs">
+                    <div class="col-4">
+                      <q-input v-model="holiday.date" outlined dense label="Date" readonly>
+                        <template v-slot:append>
+                          <q-icon name="event" class="cursor-pointer" />
+                        </template>
+                        <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                          <q-date v-model="holiday.date" mask="YYYY-MM-DD" class="full-width">
+                            <div class="row items-center justify-end">
+                              <q-btn v-close-popup label="Close" color="primary" flat />
+                            </div>
+                          </q-date>
+                        </q-popup-proxy>
+                      </q-input>
+                    </div>
+                    <div class="col-6">
+                      <q-input v-model="holiday.description" outlined dense label="Description / Reason" />
+                    </div>
+                    <div class="col-2">
+                      <q-btn flat color="negative" icon="delete" dense @click="removeHoliday(index)" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Leaves Blocking -->
+                <div>
+                  <div class="row justify-between items-center q-mb-sm">
+                    <div class="text-subtitle2 font-weight-bold">Leave Blocking</div>
+                    <q-btn flat color="primary" dense label="Add Leave" icon="add" @click="addLeave" />
+                  </div>
+
+                  <div v-for="(leave, index) in scheduleForm.leaves" :key="index" class="row q-col-gutter-sm items-center q-mb-xs">
+                    <div class="col-4">
+                      <q-input v-model="leave.startDate" outlined dense label="Start Date" readonly>
+                        <template v-slot:append>
+                          <q-icon name="event" class="cursor-pointer" />
+                        </template>
+                        <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                          <q-date v-model="leave.startDate" mask="YYYY-MM-DD" class="full-width">
+                            <div class="row items-center justify-end">
+                              <q-btn v-close-popup label="Close" color="primary" flat />
+                            </div>
+                          </q-date>
+                        </q-popup-proxy>
+                      </q-input>
+                    </div>
+                    <div class="col-4">
+                      <q-input v-model="leave.endDate" outlined dense label="End Date" readonly>
+                        <template v-slot:append>
+                          <q-icon name="event" class="cursor-pointer" />
+                        </template>
+                        <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                          <q-date v-model="leave.endDate" mask="YYYY-MM-DD" class="full-width">
+                            <div class="row items-center justify-end">
+                              <q-btn v-close-popup label="Close" color="primary" flat />
+                            </div>
+                          </q-date>
+                        </q-popup-proxy>
+                      </q-input>
+                    </div>
+                    <div class="col-2">
+                      <q-btn flat color="negative" icon="delete" dense @click="removeLeave(index)" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-right q-pt-md">
+                  <q-btn unelevated color="primary" type="submit" label="Save My Schedule" :loading="savingSchedule" />
+                </div>
               </q-form>
             </q-card-section>
-          </template>
-
-          <div v-else class="flex flex-center height-100 text-center text-grey-6 q-pa-xl" style="min-height: 300px;">
-            <div>
-              <q-icon name="assignment" size="48px" class="q-mb-md text-indigo-3" />
-              <div class="text-subtitle1 font-weight-bold">No Consultation Selected</div>
-              <div class="text-caption">Select an appointment from the list to view details, write consultation notes, and complete check-up.</div>
-            </div>
-          </div>
-        </q-card>
-      </div>
-    </div>
+          </q-card>
+        </q-tab-panel>
+      </q-tab-panels>
+    </q-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useAuth } from '~/composables/useAuth';
-import { useAppointments } from '~/composables/useAppointments';
+import { ref, onMounted, watch } from 'vue';
+import { useAuthStore } from '~/stores/auth';
 import { useQuasar } from 'quasar';
+import { useDashboardTab } from '~/composables/useDashboardTab';
 
 const $q = useQuasar();
-const { user } = useAuth();
-const { appointments, fetchAppointments, completeAppointment } = useAppointments();
+const authStore = useAuthStore();
+const { $api } = useNuxtApp();
 
-const selectedApp = ref(null);
-const consultationNotes = ref('');
-const completing = ref(false);
+const { activeTab: tab } = useDashboardTab();
 
-onMounted(() => {
-  loadAppointments();
+
+const appointments = ref([]);
+const savingSchedule = ref(false);
+
+const scheduleForm = ref({
+  slotDuration: 30,
+  weeklyAvailability: [],
+  holidays: [],
+  leaves: []
 });
 
-const loadAppointments = async () => {
+const daysOfWeekOptions = [
+  { label: 'Sunday', value: 0 },
+  { label: 'Monday', value: 1 },
+  { label: 'Tuesday', value: 2 },
+  { label: 'Wednesday', value: 3 },
+  { label: 'Thursday', value: 4 },
+  { label: 'Friday', value: 5 },
+  { label: 'Saturday', value: 6 }
+];
+
+onMounted(() => {
+  if (tab.value === 'dashboard' || !['appointments', 'availability'].includes(tab.value)) {
+    tab.value = 'appointments';
+  }
+  fetchAppointments();
+  fetchMySchedule();
+});
+
+const fetchAppointments = async () => {
   try {
-    await fetchAppointments();
-    // Keep selection if still valid
-    if (selectedApp.value) {
-      const found = appointments.value.find(a => a._id === selectedApp.value._id);
-      selectedApp.value = found || null;
-    }
+    const data = await $api('/appointments');
+    appointments.value = data.appointments || [];
   } catch (err) {
-    console.error(err);
+    console.error('Fetch appointments failed:', err);
   }
 };
 
-const selectAppointment = (app) => {
-  selectedApp.value = app;
-  consultationNotes.value = app.status === 'completed' ? app.notes : '';
-};
-
-const handleComplete = async () => {
-  if (!selectedApp.value) return;
-  completing.value = true;
+const cancelApp = async (appId) => {
   try {
-    await completeAppointment(selectedApp.value._id, consultationNotes.value);
+    await $api(`/appointments/${appId}/cancel`, {
+      method: 'PATCH'
+    });
     $q.notify({
       type: 'positive',
-      message: 'Consultation marked completed successfully.'
+      message: 'Appointment cancelled. Notification sent to patient.'
     });
-    consultationNotes.value = '';
-    selectedApp.value = null;
-    loadAppointments();
+    fetchAppointments();
   } catch (err) {
+    console.error('Cancel failed:', err);
+  }
+};
+
+const fetchMySchedule = async () => {
+  try {
+    const doctorId = authStore.user.id;
+    const data = await $api(`/schedules/doctor/${doctorId}`);
+    
+    // Normalize dates for inputs
+    const leaves = (data.leaves || []).map(l => ({
+      startDate: new Date(l.startDate).toISOString().split('T')[0],
+      endDate: new Date(l.endDate).toISOString().split('T')[0]
+    }));
+
+    const holidays = (data.holidays || []).map(h => ({
+      date: new Date(h.date).toISOString().split('T')[0],
+      description: h.description
+    }));
+
+    scheduleForm.value = {
+      slotDuration: data.slotDuration || 30,
+      weeklyAvailability: data.weeklyAvailability || [],
+      leaves,
+      holidays
+    };
+  } catch (err) {
+    console.error('Fetch schedule failed:', err);
+  }
+};
+
+const addWeeklyShift = () => {
+  scheduleForm.value.weeklyAvailability.push({
+    dayOfWeek: 1,
+    slots: [{ startTime: '09:00', endTime: '13:00' }]
+  });
+};
+
+const removeWeeklyShift = (index) => {
+  scheduleForm.value.weeklyAvailability.splice(index, 1);
+};
+
+const addHoliday = () => {
+  scheduleForm.value.holidays.push({
+    date: new Date().toISOString().split('T')[0],
+    description: 'Vacation'
+  });
+};
+
+const removeHoliday = (index) => {
+  scheduleForm.value.holidays.splice(index, 1);
+};
+
+const addLeave = () => {
+  const today = new Date().toISOString().split('T')[0];
+  scheduleForm.value.leaves.push({
+    startDate: today,
+    endDate: today
+  });
+};
+
+const removeLeave = (index) => {
+  scheduleForm.value.leaves.splice(index, 1);
+};
+
+const saveSchedule = async () => {
+  savingSchedule.value = true;
+  try {
+    const doctorId = authStore.user.id;
+    await $api(`/schedules/doctor/${doctorId}`, {
+      method: 'PUT',
+      body: scheduleForm.value
+    });
+
+    $q.notify({
+      type: 'positive',
+      message: 'Your availability schedule has been updated successfully.'
+    });
+  } catch (err) {
+    console.error('Save schedule failed:', err);
     $q.notify({
       type: 'negative',
-      message: err.message || 'Failed to complete consultation'
+      message: err._data?.message || 'Failed to update schedule'
     });
   } finally {
-    completing.value = false;
+    savingSchedule.value = false;
   }
 };
 
@@ -183,7 +357,6 @@ const formatDate = (dateStr) => {
 const getAppStatusColor = (status) => {
   switch (status) {
     case 'confirmed': return 'green-6';
-    case 'checked_in': return 'teal-6';
     case 'pending': return 'orange-6';
     case 'completed': return 'blue-6';
     case 'cancelled': return 'red-6';

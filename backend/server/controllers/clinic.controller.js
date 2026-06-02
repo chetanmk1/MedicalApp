@@ -183,7 +183,7 @@ export const rejectClinic = async (req, res) => {
 // @access  Public
 export const getClinics = async (req, res) => {
   try {
-    const { city, district, status } = req.query;
+    const { city, district, status, name } = req.query;
     const query = {};
 
     // Check if requester is super_admin (optionally decode token)
@@ -210,6 +210,9 @@ export const getClinics = async (req, res) => {
       query.status = 'active';
     }
 
+    if (name) {
+      query.name = { $regex: new RegExp(name, 'i') };
+    }
     if (city) {
       query.city = { $regex: new RegExp(city, 'i') };
     }
