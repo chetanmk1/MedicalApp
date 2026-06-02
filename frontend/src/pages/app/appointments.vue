@@ -38,7 +38,7 @@
                 <br />
                 <span><strong>Clinic:</strong> {{ app.clinicId?.name }} ({{ app.clinicId?.city }}, {{ app.clinicId?.district }})</span>
                 <br />
-                <span><strong>Time:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}</span>
+                <span><strong>Time:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
                 <br v-if="app.notes" />
                 <span v-if="app.notes"><strong>Reason:</strong> {{ app.notes }}</span>
               </q-item-label>
@@ -67,7 +67,7 @@
         <q-card-section class="q-gutter-y-md q-pt-md">
           <div v-if="targetApp">
             <p class="q-mb-xs">Rescheduling consultation with <strong>Dr. {{ targetApp.doctorId?.name }}</strong>.</p>
-            <p class="text-caption text-grey-7">Current Slot: {{ formatDate(targetApp.date) }} at {{ targetApp.startTime }}</p>
+            <p class="text-caption text-grey-7">Current Slot: {{ formatDate(targetApp.date) }} at {{ formatTime(targetApp.startTime) }}</p>
           </div>
 
           <!-- Date Selector -->
@@ -112,7 +112,7 @@
                   class="full-width"
                   :color="selectedSlot?.startTime === slot.startTime ? 'secondary' : (slot.available ? 'primary' : 'grey-5')"
                   :disable="!slot.available"
-                  :label="slot.startTime"
+                  :label="formatTime(slot.startTime)"
                   @click="selectSlot(slot)"
                 />
               </div>
@@ -141,6 +141,9 @@ import { ref, onMounted, computed } from 'vue';
 import { useAppointments } from '~/composables/useAppointments';
 import { useDoctors } from '~/composables/useDoctors';
 import { useQuasar } from 'quasar';
+import { useFormat } from '~/composables/useFormat';
+
+const { formatDate, formatTime } = useFormat();
 
 definePageMeta({
   role: 'patient'
@@ -242,9 +245,7 @@ const submitReschedule = async () => {
   }
 };
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toDateString();
-};
+
 
 const getAppStatusColor = (status) => {
   switch (status) {

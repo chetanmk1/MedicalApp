@@ -31,7 +31,7 @@
                   </div>
                   <q-item-label caption class="q-mt-xs">
                     <strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})<br>
-                    <strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}<br>
+                    <strong>Slot:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}<br>
                     <strong>Phone:</strong> {{ app.patientId?.phone }}
                   </q-item-label>
                 </q-item-section>
@@ -173,7 +173,7 @@
                     class="full-width"
                     :color="bookingForm.startTime === slot.startTime ? 'secondary' : (slot.available ? 'primary' : 'grey-5')"
                     :disable="!slot.available"
-                    :label="slot.startTime"
+                    :label="formatTime(slot.startTime)"
                     @click="bookingForm.startTime = slot.startTime"
                   />
                 </div>
@@ -242,11 +242,13 @@ import { useAppointments } from '~/composables/useAppointments';
 import { useDoctors } from '~/composables/useDoctors';
 import { useQuasar } from 'quasar';
 import { useDashboardTab } from '~/composables/useDashboardTab';
+import { useFormat } from '~/composables/useFormat';
 
 const $q = useQuasar();
 const { patients, searchPatients } = usePatients();
 const { appointments, fetchAppointments, createAppointment, cancelAppointment, rescheduleAppointment, checkInAppointment } = useAppointments();
 const { fetchDoctors, getAvailableSlots } = useDoctors();
+const { formatDate, formatTime } = useFormat();
 
 const { activeTab: tab } = useDashboardTab();
 
@@ -446,9 +448,7 @@ const submitReschedule = async () => {
   }
 };
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toDateString();
-};
+
 
 const getAppStatusColor = (status) => {
   switch (status) {

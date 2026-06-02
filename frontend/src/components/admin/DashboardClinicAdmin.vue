@@ -346,7 +346,7 @@
                 <q-item-label caption class="q-mt-xs">
                   <span><strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})</span>
                   <br />
-                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}</span>
+                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
                   <br v-if="app.notes" />
                   <span v-if="app.notes"><strong>Reason:</strong> {{ app.notes }}</span>
                 </q-item-label>
@@ -403,6 +403,7 @@ import { useDoctors } from '~/composables/useDoctors';
 import { useAppointments } from '~/composables/useAppointments';
 import { useQuasar } from 'quasar';
 import { useDashboardTab } from '~/composables/useDashboardTab';
+import { useFormat } from '~/composables/useFormat';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
@@ -410,6 +411,7 @@ const { fetchSchedule, saveSchedule } = useDoctors();
 const { appointments, fetchAppointments, cancelAppointment, rescheduleAppointment } = useAppointments();
 
 const { activeTab } = useDashboardTab();
+const { formatDate, formatTime } = useFormat();
 const innerTab = ref('profile');
 
 const clinicInfo = ref(null);
@@ -698,9 +700,7 @@ const submitReschedule = async () => {
   }
 };
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toDateString();
-};
+
 
 const getAppStatusColor = (status) => {
   switch (status) {

@@ -49,7 +49,7 @@
                 <q-item-label caption class="q-mt-xs">
                   <span><strong>Date:</strong> {{ formatDate(app.date) }}</span>
                   <br />
-                  <span><strong>Time:</strong> {{ app.startTime }} - {{ app.endTime }}</span>
+                  <span><strong>Time:</strong> {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
                   <br />
                   <span><strong>Phone:</strong> {{ app.patientId?.phone }}</span>
                   <br v-if="app.notes" />
@@ -205,12 +205,14 @@ import { ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useQuasar } from 'quasar';
 import { useDashboardTab } from '~/composables/useDashboardTab';
+import { useFormat } from '~/composables/useFormat';
 
 const $q = useQuasar();
 const authStore = useAuthStore();
 const { $api } = useNuxtApp();
 
 const { activeTab: tab } = useDashboardTab();
+const { formatDate, formatTime } = useFormat();
 
 
 const appointments = ref([]);
@@ -350,9 +352,7 @@ const saveSchedule = async () => {
   }
 };
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toDateString();
-};
+
 
 const getAppStatusColor = (status) => {
   switch (status) {

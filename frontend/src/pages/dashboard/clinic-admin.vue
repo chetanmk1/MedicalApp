@@ -301,7 +301,7 @@
                 <q-item-label caption class="q-mt-xs">
                   <span><strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})</span>
                   <br />
-                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}</span>
+                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
                   <br v-if="app.notes" />
                   <span v-if="app.notes"><strong>Reason:</strong> {{ app.notes }}</span>
                 </q-item-label>
@@ -344,6 +344,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useQuasar } from 'quasar';
+import { useFormat } from '~/composables/useFormat';
 
 definePageMeta({
   role: 'clinic_admin'
@@ -352,6 +353,7 @@ definePageMeta({
 const $q = useQuasar();
 const authStore = useAuthStore();
 const { $api } = useNuxtApp();
+const { formatDate, formatTime } = useFormat();
 
 const tab = ref('profile');
 const clinicInfo = ref(null);
@@ -639,9 +641,7 @@ const submitReschedule = async () => {
   }
 };
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toDateString();
-};
+
 
 const getAppStatusColor = (status) => {
   switch (status) {
