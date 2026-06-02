@@ -146,8 +146,8 @@
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer" />
               </template>
-              <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                <q-date v-model="bookingForm.date" mask="YYYY-MM-DD" @update:model-value="fetchSlots" :options="(date) => date >= todayStr.replace(/-/g, '/')">
+              <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+                <q-date v-model="bookingForm.date" mask="YYYY-MM-DD" @update:model-value="fetchSlots" :options="(date) => date >= todayStr.replace(/-/g, '/')" class="full-width">
                   <div class="row items-center justify-end">
                     <q-btn v-close-popup label="Close" color="primary" flat />
                   </div>
@@ -215,8 +215,8 @@
             <template v-slot:append>
               <q-icon name="event" class="cursor-pointer" />
             </template>
-            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-              <q-date v-model="rescheduleForm.date" mask="YYYY-MM-DD">
+            <q-popup-proxy transition-show="scale" transition-hide="scale" :breakpoint="9999">
+              <q-date v-model="rescheduleForm.date" mask="YYYY-MM-DD" class="full-width">
                 <div class="row items-center justify-end">
                   <q-btn v-close-popup label="Close" color="primary" flat />
                 </div>
