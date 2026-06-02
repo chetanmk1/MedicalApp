@@ -178,11 +178,21 @@
             v-model="bookingDate"
             outlined
             dense
-            type="date"
             label="Appointment Date"
-            @update:model-value="fetchSlots"
+            readonly
             :min="todayStr"
-          />
+          >
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer" />
+            </template>
+            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-date v-model="bookingDate" mask="YYYY-MM-DD" @update:model-value="fetchSlots" :options="(date) => date >= todayStr.replace(/-/g, '/')">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-input>
 
           <!-- Slots Display -->
           <div>

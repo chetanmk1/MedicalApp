@@ -247,7 +247,18 @@
 
                       <div v-for="(holiday, index) in scheduleForm.holidays" :key="index" class="row q-col-gutter-sm items-center q-mb-xs">
                         <div class="col-4">
-                          <q-input v-model="holiday.date" outlined dense type="date" label="Date" />
+                          <q-input v-model="holiday.date" outlined dense label="Date" readonly>
+                            <template v-slot:append>
+                              <q-icon name="event" class="cursor-pointer" />
+                            </template>
+                            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                              <q-date v-model="holiday.date" mask="YYYY-MM-DD">
+                                <div class="row items-center justify-end">
+                                  <q-btn v-close-popup label="Close" color="primary" flat />
+                                </div>
+                              </q-date>
+                            </q-popup-proxy>
+                          </q-input>
                         </div>
                         <div class="col-6">
                           <q-input v-model="holiday.description" outlined dense label="Description / Reason" />
@@ -267,10 +278,32 @@
 
                       <div v-for="(leave, index) in scheduleForm.leaves" :key="index" class="row q-col-gutter-sm items-center q-mb-xs">
                         <div class="col-4">
-                          <q-input v-model="leave.startDate" outlined dense type="date" label="Start Date" />
+                          <q-input v-model="leave.startDate" outlined dense label="Start Date" readonly>
+                            <template v-slot:append>
+                              <q-icon name="event" class="cursor-pointer" />
+                            </template>
+                            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                              <q-date v-model="leave.startDate" mask="YYYY-MM-DD">
+                                <div class="row items-center justify-end">
+                                  <q-btn v-close-popup label="Close" color="primary" flat />
+                                </div>
+                              </q-date>
+                            </q-popup-proxy>
+                          </q-input>
                         </div>
                         <div class="col-4">
-                          <q-input v-model="leave.endDate" outlined dense type="date" label="End Date" />
+                          <q-input v-model="leave.endDate" outlined dense label="End Date" readonly>
+                            <template v-slot:append>
+                              <q-icon name="event" class="cursor-pointer" />
+                            </template>
+                            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                              <q-date v-model="leave.endDate" mask="YYYY-MM-DD">
+                                <div class="row items-center justify-end">
+                                  <q-btn v-close-popup label="Close" color="primary" flat />
+                                </div>
+                              </q-date>
+                            </q-popup-proxy>
+                          </q-input>
                         </div>
                         <div class="col-2">
                           <q-btn flat color="negative" icon="delete" dense @click="removeLeave(index)" />
@@ -339,7 +372,18 @@
         </q-card-section>
 
         <q-card-section class="q-gutter-y-md q-pt-md">
-          <q-input v-model="rescheduleForm.date" type="date" outlined dense label="New Date" />
+          <q-input v-model="rescheduleForm.date" outlined dense label="New Date" readonly>
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer" />
+            </template>
+            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-date v-model="rescheduleForm.date" mask="YYYY-MM-DD" @update:model-value="fetchSlots">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-input>
           <q-input v-model="rescheduleForm.startTime" outlined dense label="New Start Time (HH:MM)" />
         </q-card-section>
 

@@ -136,14 +136,24 @@
             <!-- Date Selector -->
             <q-input
               v-model="bookingForm.date"
-              type="date"
               outlined
               dense
               label="Appointment Date"
+              readonly
               :min="todayStr"
               required
-              @update:model-value="fetchSlots"
-            />
+            >
+              <template v-slot:append>
+                <q-icon name="event" class="cursor-pointer" />
+              </template>
+              <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                <q-date v-model="bookingForm.date" mask="YYYY-MM-DD" @update:model-value="fetchSlots" :options="(date) => date >= todayStr.replace(/-/g, '/')">
+                  <div class="row items-center justify-end">
+                    <q-btn v-close-popup label="Close" color="primary" flat />
+                  </div>
+                </q-date>
+              </q-popup-proxy>
+            </q-input>
 
             <!-- Slots Picker -->
             <div v-if="bookingForm.doctorId && bookingForm.date">
@@ -201,7 +211,18 @@
         </q-card-section>
 
         <q-card-section class="q-gutter-y-md q-pt-md">
-          <q-input v-model="rescheduleForm.date" type="date" outlined dense label="New Date" />
+          <q-input v-model="rescheduleForm.date" outlined dense label="New Date" readonly>
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer" />
+            </template>
+            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-date v-model="rescheduleForm.date" mask="YYYY-MM-DD">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-input>
           <q-input v-model="rescheduleForm.startTime" outlined dense label="New Start Time (HH:MM)" />
         </q-card-section>
 
