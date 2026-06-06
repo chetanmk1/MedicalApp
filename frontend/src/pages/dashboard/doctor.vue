@@ -65,7 +65,7 @@
 
         <!-- Availability Schedule Self Configuration Panel -->
         <q-tab-panel name="availability" class="q-gutter-y-md">
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <q-form @submit.prevent="saveSchedule" class="q-gutter-y-md">
                 <q-input

@@ -7,7 +7,7 @@
       </div>
       
       <!-- Maintenance Mode Control -->
-      <q-card flat bordered class="q-pa-sm" style="border-radius: 12px; background: #fffdf5; border-color: #fef08a;">
+      <q-card flat bordered class="q-pa-sm bg-amber-1" style="border-radius: 12px; border-color: #fef08a;">
         <div class="row items-center q-gutter-md">
           <div class="row items-center">
             <q-icon name="warning" color="amber-8" size="24px" class="q-mr-sm" />
@@ -47,7 +47,7 @@
         <!-- Onboard & Manage Clinics Panel -->
         <q-tab-panel name="clinics" class="q-gutter-y-lg">
           <!-- Create Clinic Form -->
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Onboard New Clinic</div>
               <q-form @submit.prevent="submitClinic" class="row q-col-gutter-sm">
@@ -128,7 +128,7 @@
         <!-- Clinic Admins Panel -->
         <q-tab-panel name="admins" class="q-gutter-y-lg">
           <!-- Create Admin Form -->
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Create Clinic Admin Account</div>
               

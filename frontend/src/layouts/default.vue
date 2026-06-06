@@ -17,6 +17,11 @@
 
         <!-- Navigation Links -->
         <div class="gt-xs row q-gutter-md items-center">
+          <!-- Dark Mode Toggle -->
+          <q-btn flat round dense color="white" :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="$q.dark.toggle()">
+            <q-tooltip>{{ $q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</q-tooltip>
+          </q-btn>
+
           <q-btn flat no-caps color="white" label="Find Clinic" to="/" />
           
           <template v-if="authStore.isLoggedIn">
@@ -129,6 +134,17 @@
             <q-item-section>Sign Up</q-item-section>
           </q-item>
         </template>
+        
+        <q-separator />
+
+        <!-- Dark Mode Toggle (Mobile) -->
+        <q-item clickable v-close-popup @click="$q.dark.toggle()">
+          <q-item-section avatar>
+            <q-icon :name="$q.dark.isActive ? 'light_mode' : 'dark_mode'" />
+          </q-item-section>
+          <q-item-section class="font-weight-medium">Toggle Theme</q-item-section>
+        </q-item>
+
       </q-list>
     </q-drawer>
 

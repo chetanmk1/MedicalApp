@@ -26,6 +26,10 @@
 
         <!-- Role Switcher & Profile Dropdown -->
         <div class="row items-center q-gutter-md">
+          <!-- Dark Mode Toggle -->
+          <q-btn flat round dense color="white" :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="$q.dark.toggle()">
+            <q-tooltip>{{ $q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</q-tooltip>
+          </q-btn>
           <!-- Role Switcher -->
           <q-btn-dropdown
             v-if="user?.roles && user.roles.length > 1"

@@ -29,7 +29,7 @@
       <q-tab-panels v-model="tab" animated>
         <!-- Clinic Profile Panel -->
         <q-tab-panel name="profile" class="q-gutter-y-lg">
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Manage Clinic Info</div>
               <q-form @submit.prevent="updateProfile" class="row q-col-gutter-sm" v-if="clinicInfo">
@@ -62,7 +62,7 @@
         <!-- Doctors & Staff Accounts Panel -->
         <q-tab-panel name="users" class="q-gutter-y-lg">
           <!-- Create Account Form -->
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Add Doctor or Staff Account</div>
               <q-form @submit.prevent="submitUser" class="row q-col-gutter-sm">
