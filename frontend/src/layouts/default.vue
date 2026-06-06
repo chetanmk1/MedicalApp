@@ -18,9 +18,7 @@
         <!-- Navigation Links -->
         <div class="gt-xs row q-gutter-md items-center">
           <!-- Dark Mode Toggle -->
-          <q-btn flat round dense color="white" :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="$q.dark.toggle()">
-            <q-tooltip>{{ $q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</q-tooltip>
-          </q-btn>
+          <q-btn flat round dense color="white" :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="$q.dark.toggle()" :title="$q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode'" />
 
           <q-btn flat no-caps color="white" label="Find Clinic" to="/" />
           
@@ -55,7 +53,7 @@
           
           <template v-else>
             <q-btn flat no-caps color="white" label="Login" to="/app/login" />
-            <q-btn unelevated no-caps color="white" text-color="teal-9" label="Sign Up" to="/app/register" class="q-px-md font-weight-bold" style="border-radius: 8px;" />
+            <q-btn unelevated no-caps :color="$q.dark.isActive ? 'primary' : 'white'" :text-color="$q.dark.isActive ? 'white' : 'teal-9'" label="Sign Up" to="/app/register" class="q-px-md font-weight-bold" style="border-radius: 8px;" />
           </template>
         </div>
 
