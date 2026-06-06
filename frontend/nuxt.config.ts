@@ -16,6 +16,7 @@ export default defineNuxtConfig({
       fontIcon: 'material-icons',
     },
     config: {
+      dark: true,
       brand: {
         primary: '#4f46e5',   // Premium Indigo
         secondary: '#06b6d4', // Premium Cyan
