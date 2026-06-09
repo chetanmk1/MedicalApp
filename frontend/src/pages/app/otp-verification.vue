@@ -9,7 +9,7 @@
           <h2 class="text-h5 font-weight-bold text-slate-800 q-my-none">Enter OTP Code</h2>
           <p class="text-caption text-grey-7 q-mt-sm">
             We have sent a verification code to <strong>{{ email }}</strong>.<br>
-            Please check your email and enter the code below.
+            Please check your email/SMS and enter the code below.
           </p>
           <q-banner dense class="bg-amber-1 text-amber-9 q-mt-md rounded">
             <strong>Testing Tip:</strong> Check the terminal logs for the generated OTP!
@@ -83,7 +83,7 @@ onMounted(() => {
   if (!email.value) {
     $q.notify({
       type: 'warning',
-      message: 'Email parameter missing. Please register or login.'
+      message: 'Identifier parameter missing. Please register or login.'
     });
     navigateTo('/app/login');
   }

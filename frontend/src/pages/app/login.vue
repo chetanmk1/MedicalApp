@@ -18,11 +18,10 @@
               v-model="email"
               outlined
               dense
-              type="email"
-              label="Email Address *"
+              label="Email or Mobile Number *"
               required
               lazy-rules
-              :rules="[ val => val && val.length > 0 || 'Email is required' ]"
+              :rules="[ val => val && val.trim().length >= 10 || 'Please enter a valid Email or Mobile Number' ]"
             >
               <template v-slot:prepend>
                 <q-icon name="email" color="grey-6" />
@@ -116,20 +115,16 @@ const handleSubmit = async () => {
   } catch (err) {
     console.error('Login failed:', err);
     
-    // Check if unverified patient tries to login
-    if (err.status === 403 && err._data?.status === 'pending_otp') {
-      $q.notify({
-        type: 'warning',
-        message: 'Account not verified. Redirecting to OTP verification...'
-      });
-      navigateTo(`/app/otp-verification?email=${encodeURIComponent(err._data.email)}`);
-      return;
-    }
-
     $q.notify({
       type: 'negative',
-      message: err._data?.message || 'Invalid email or password'
+      message: err._data?.message || 'Login failed. Please check your credentials.'
     });
+    
+    // Redirect to OTP if status is pending_otp
+    if (err._data?.status === 'pending_otp' && err._data?.identifier) {
+      navigateTo(`/app/otp-verification?email=${encodeURIComponent(err._data.identifier)}`);
+      return;
+    }
   } finally {
     loading.value = false;
   }

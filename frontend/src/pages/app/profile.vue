@@ -42,11 +42,10 @@
                   outlined
                   dense
                   type="email"
-                  label="Email Address *"
-                  required
+                  label="Email Address (Optional)"
                   lazy-rules
                   :rules="[ 
-                    val => val && val.trim().length > 0 || 'Email is required',
+                    val => !val || val.trim().length > 0 || 'Please enter a valid email',
                     val => isValidEmail(val) || 'Invalid email format'
                   ]"
                 />
@@ -254,6 +253,7 @@ onMounted(() => {
 });
 
 const isValidEmail = (val) => {
+  if (!val) return true;
   const pattern = /^(?=[A-Za-z0-9@._%+-]{6,254}$)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/;
   return pattern.test(val);
 };

@@ -33,10 +33,9 @@
               outlined
               dense
               type="email"
-              label="Email Address *"
-              required
+              label="Email Address (Optional)"
               lazy-rules
-              :rules="[ val => val && val.trim().length > 0 || 'Email is required' ]"
+              :rules="[ val => !val || val.trim().length > 0 || 'Please enter a valid email' ]"
             >
               <template v-slot:prepend>
                 <q-icon name="email" color="grey-6" />
