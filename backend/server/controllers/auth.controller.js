@@ -26,7 +26,7 @@ const generateRefreshToken = (userId) => {
 // @access  Public
 export const registerPatient = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, phone, age, gender } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -44,6 +44,8 @@ export const registerPatient = async (req, res) => {
       email,
       password,
       phone,
+      age,
+      gender,
       role: 'patient',
       status: 'pending_otp',
       otp: {
@@ -415,10 +417,13 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const { name, email, phone, specialization } = req.body;
+    const { name, email, phone, specialization, age, gender } = req.body;
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
+    if (age !== undefined) user.age = age;
+    if (gender) user.gender = gender;
+    
     if (user.role === 'doctor' && specialization) {
       user.specialization = specialization;
     }
@@ -443,7 +448,9 @@ export const updateProfile = async (req, res) => {
         clinicId: user.clinicId,
         specialization: user.specialization,
         phone: user.phone,
-        status: user.status
+        status: user.status,
+        age: user.age,
+        gender: user.gender
       }
     });
   } catch (error) {

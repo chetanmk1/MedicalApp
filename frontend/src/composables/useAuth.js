@@ -22,10 +22,10 @@ export const useAuth = () => {
     return data;
   };
 
-  const register = async (name, email, phone, password) => {
+  const register = async (name, email, phone, password, age, gender) => {
     return await $api('/auth/register', {
       method: 'POST',
-      body: { name, email, phone, password },
+      body: { name, email, phone, password, age, gender },
     });
   };
 

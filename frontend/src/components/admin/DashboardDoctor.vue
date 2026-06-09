@@ -60,9 +60,6 @@
                 No appointments yet for the selected date: <strong class="text-slate-800">{{ formatDateWithDayFallback(filterDate) }}</strong>.
               </div>
             </div>
-            <div class="absolute-bottom-right q-pa-md">
-              <q-btn outline color="primary" icon="restore" label="Reset to Today" @click="resetDateFilter" />
-            </div>
           </div>
 
           <q-list v-else separator bordered style="border-radius: 12px;" class="bg-grey-1">

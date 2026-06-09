@@ -18,10 +18,10 @@
               v-model="name"
               outlined
               dense
-              label="Full Name"
+              label="Full Name *"
               required
               lazy-rules
-              :rules="[ val => val && val.length > 0 || 'Name is required' ]"
+              :rules="[ val => val && val.trim().length > 0 || 'Name is required' ]"
             >
               <template v-slot:prepend>
                 <q-icon name="person" color="grey-6" />
@@ -33,10 +33,10 @@
               outlined
               dense
               type="email"
-              label="Email Address"
+              label="Email Address *"
               required
               lazy-rules
-              :rules="[ val => val && val.length > 0 || 'Email is required' ]"
+              :rules="[ val => val && val.trim().length > 0 || 'Email is required' ]"
             >
               <template v-slot:prepend>
                 <q-icon name="email" color="grey-6" />
@@ -47,22 +47,52 @@
               v-model="phone"
               outlined
               dense
-              label="Phone Number"
+              label="Phone Number *"
               required
               lazy-rules
-              :rules="[ val => val && val.length > 0 || 'Phone number is required' ]"
+              :rules="[ val => val && val.trim().length > 0 || 'Phone number is required' ]"
             >
               <template v-slot:prepend>
                 <q-icon name="phone" color="grey-6" />
               </template>
             </q-input>
 
+            <div class="row q-col-gutter-md">
+              <div class="col-6">
+                <q-input
+                  v-model.number="age"
+                  outlined
+                  dense
+                  type="number"
+                  label="Age (Optional)"
+                  :rules="[ val => !val || (val > 0 && val <= 150) || 'Age must be between 1 and 150' ]"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="cake" color="grey-6" />
+                  </template>
+                </q-input>
+              </div>
+              <div class="col-6">
+                <q-select
+                  v-model="gender"
+                  :options="['Male', 'Female', 'Other', 'Prefer not to say']"
+                  outlined
+                  dense
+                  label="Gender (Optional)"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="wc" color="grey-6" />
+                  </template>
+                </q-select>
+              </div>
+            </div>
+
             <q-input
               v-model="password"
               outlined
               dense
               :type="showPassword ? 'text' : 'password'"
-              label="Password"
+              label="Password *"
               required
               lazy-rules
               :rules="[ val => val && val.length >= 6 || 'Password must be at least 6 characters' ]"
@@ -117,6 +147,8 @@ const { register } = useAuth();
 const name = ref('');
 const email = ref('');
 const phone = ref('');
+const age = ref('');
+const gender = ref('');
 const password = ref('');
 const showPassword = ref(false);
 const loading = ref(false);
@@ -124,7 +156,7 @@ const loading = ref(false);
 const handleRegister = async () => {
   loading.value = true;
   try {
-    await register(name.value, email.value, phone.value, password.value);
+    await register(name.value, email.value, phone.value, password.value, age.value, gender.value);
     
     $q.notify({
       type: 'positive',

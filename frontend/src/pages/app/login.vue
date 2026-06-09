@@ -19,7 +19,7 @@
               outlined
               dense
               type="email"
-              label="Email Address"
+              label="Email Address *"
               required
               lazy-rules
               :rules="[ val => val && val.length > 0 || 'Email is required' ]"
@@ -34,7 +34,7 @@
               outlined
               dense
               :type="showPassword ? 'text' : 'password'"
-              label="Password"
+              label="Password *"
               required
               lazy-rules
               :rules="[ val => val && val.length >= 6 || 'Password must be at least 6 characters' ]"
