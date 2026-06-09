@@ -29,34 +29,57 @@
         <q-tab-panel name="appointments" class="q-gutter-y-md">
           <div class="row justify-between items-center q-mb-md">
             <div class="text-subtitle1 font-weight-bold text-slate-800">Booked Patients List</div>
-            <q-btn flat icon="refresh" color="grey-6" label="Reload" @click="fetchAppointments" />
+            <div class="row q-gutter-x-sm items-center">
+              <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 200px; cursor: pointer;" readonly>
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer" :color="$q.dark.isActive ? 'grey-3' : 'grey-8'" />
+                </template>
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="filterDate" mask="YYYY-MM-DD">
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="Close" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-input>
+              <q-btn unelevated color="primary" outline label="Reset Date" @click="resetDateFilter" />
+              <q-btn flat icon="refresh" color="grey-6" @click="fetchAppointments">
+                <q-tooltip>Reload</q-tooltip>
+              </q-btn>
+            </div>
           </div>
 
-          <div v-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
-            No appointments booked with you yet.
+          <div v-if="filteredAppointments.length === 0" class="text-center q-py-xl glass-card relative-position q-mt-md" style="border-radius: 16px; min-height: 220px;">
+            <div class="q-pt-md">
+              <q-icon name="event_busy" size="64px" color="negative" class="q-mb-md" style="opacity: 0.7;" />
+              <div class="text-h6 text-negative font-weight-bold">No Appointments Found</div>
+              <div class="text-subtitle1 text-grey-7 q-mt-sm">
+                No appointments yet for the selected date: <strong class="text-slate-800">{{ formatDateWithDayFallback(filterDate) }}</strong>.
+              </div>
+            </div>
+            <div class="absolute-bottom-right q-pa-md">
+              <q-btn outline color="primary" icon="restore" label="Reset to Today" @click="resetDateFilter" />
+            </div>
           </div>
 
-          <q-list v-else separator bordered style="border-radius: 12px;">
-            <q-item v-for="app in appointments" :key="app._id" class="q-py-md">
+          <q-list v-else separator bordered style="border-radius: 12px;" class="bg-grey-1">
+            <q-item v-for="app in filteredAppointments" :key="app._id" class="q-py-md hover-lift" clickable @click="openDetails(app)">
               <q-item-section>
                 <div class="row items-center q-gutter-x-sm">
-                  <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
+                  <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name || 'Unknown Patient' }}</span>
                   <q-chip size="sm" :color="getAppStatusColor(app.status)" text-color="white" :label="app.status.toUpperCase()" />
                 </div>
                 <q-item-label caption class="q-mt-xs">
-                  <span><strong>Date:</strong> {{ formatDate(app.date) }}</span>
+                  <span><strong>Date:</strong> {{ formatDateWithDay(app.date) }}</span>
                   <br />
                   <span><strong>Time:</strong> {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
-                  <br />
-                  <span><strong>Phone:</strong> {{ app.patientId?.phone }}</span>
-                  <br v-if="app.notes" />
-                  <span v-if="app.notes"><strong>Reason:</strong> {{ app.notes }}</span>
                 </q-item-label>
               </q-item-section>
 
-              <q-item-section side v-if="app.status !== 'cancelled'">
+              <q-item-section side>
                 <div class="row items-center q-gutter-sm">
-                  <q-btn unelevated dense color="negative" label="Cancel" size="sm" @click="cancelApp(app._id)" />
+                  <q-btn v-if="app.status !== 'cancelled'" unelevated dense color="negative" label="Cancel" size="sm" @click.stop="confirmCancelApp(app)" />
+                  <q-icon name="chevron_right" color="grey-6" />
                 </div>
               </q-item-section>
             </q-item>
@@ -161,11 +184,111 @@
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
+
+    <!-- Appointment Details Dialog -->
+    <q-dialog v-model="detailsDialog">
+      <q-card style="width: 650px; max-width: 95vw; border-radius: 16px;">
+        <q-card-section class="bg-primary text-white row justify-between items-center">
+          <div class="text-h6 font-weight-bold">Appointment Details</div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+        
+        <q-card-section class="q-pt-lg" v-if="selectedApp">
+          <div class="row items-center q-mb-md">
+            <q-avatar size="64px" color="indigo-1" text-color="primary" class="q-mr-md font-weight-bold" style="font-size: 24px;">
+              {{ selectedApp.patientId?.name ? selectedApp.patientId.name.charAt(0).toUpperCase() : '?' }}
+            </q-avatar>
+            <div>
+              <div class="text-h6 font-weight-bold text-slate-800">{{ selectedApp.patientId?.name || 'Unknown Patient' }}</div>
+              <q-chip size="sm" :color="getAppStatusColor(selectedApp.status)" text-color="white" :label="selectedApp.status.toUpperCase()" class="q-ma-none" />
+            </div>
+          </div>
+          
+          <q-separator class="q-my-md" />
+          
+          <div class="q-gutter-y-md">
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Patient Name:</div>
+              <div class="col-8 text-slate-800 font-weight-bold">{{ selectedApp.patientId?.name || 'Unknown Patient' }}</div>
+            </div>
+
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Date & Time:</div>
+              <div class="col-8 text-slate-800">
+                {{ formatDateWithDay(selectedApp.date) }}<br/>
+                {{ formatTime(selectedApp.startTime) }} - {{ formatTime(selectedApp.endTime) }}
+              </div>
+            </div>
+            
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Phone Number:</div>
+              <div class="col-8 text-slate-800">{{ selectedApp.patientId?.phone || 'N/A' }}</div>
+            </div>
+            
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Email:</div>
+              <div class="col-8 text-slate-800">{{ selectedApp.patientId?.email || 'N/A' }}</div>
+            </div>
+            
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Age / Gender:</div>
+              <div class="col-8 text-slate-800">
+                {{ selectedApp.patientId?.age ? selectedApp.patientId.age + ' yrs' : 'N/A' }} / 
+                {{ selectedApp.patientId?.gender ? selectedApp.patientId.gender : 'N/A' }}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-4 text-grey-7 font-weight-bold">Reason / Notes:</div>
+              <div class="col-8 text-slate-800">{{ selectedApp.notes || 'Not provided' }}</div>
+            </div>
+          </div>
+        </q-card-section>
+        
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn v-if="selectedApp && selectedApp.status !== 'cancelled'" outline color="negative" label="Cancel Appointment" @click="confirmCancelApp(selectedApp)" />
+          <q-btn unelevated color="primary" label="Close" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Cancellation Dialog -->
+    <q-dialog v-model="cancelDialog">
+      <q-card style="width: 550px; max-width: 95vw; border-radius: 16px;">
+        <q-card-section class="bg-negative text-white row justify-between items-center">
+          <div class="text-h6 font-weight-bold">Cancel Appointment</div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md" v-if="appToCancel">
+          <div class="q-mb-md text-slate-800" style="font-size: 15px;">
+            Are you sure you want to cancel the appointment for <strong class="text-primary">{{ appToCancel.patientId?.name || 'Unknown Patient' }}</strong> on <strong>{{ formatDateWithDay(appToCancel.date) }}</strong> at <strong>{{ formatTime(appToCancel.startTime) }}</strong>?
+          </div>
+          
+          <q-input
+            v-model="cancelReason"
+            type="textarea"
+            outlined
+            bg-color="white"
+            label="Reason for Cancellation (Required)"
+            :rules="[val => !!val || 'Reason is required']"
+            class="q-mt-md"
+            rows="3"
+            placeholder="e.g. Doctor is unavailable, emergency, etc."
+          />
+        </q-card-section>
+
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Keep Appointment" color="grey-8" v-close-popup />
+          <q-btn unelevated color="negative" label="Confirm Cancellation" @click="submitCancelApp" :disable="!cancelReason || !cancelReason.trim()" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useQuasar } from 'quasar';
 import { useFormat } from '~/composables/useFormat';
@@ -177,11 +300,50 @@ definePageMeta({
 const $q = useQuasar();
 const authStore = useAuthStore();
 const { $api } = useNuxtApp();
-const { formatDate, formatTime } = useFormat();
+const { formatDate, formatTime, formatDateWithDay } = useFormat();
 
 const tab = ref('appointments');
 const appointments = ref([]);
+const filterDate = ref(new Date().toISOString().split('T')[0]); // Default to today
+const detailsDialog = ref(false);
+const cancelDialog = ref(false);
+const selectedApp = ref(null);
+const appToCancel = ref(null);
+const cancelReason = ref('');
 const savingSchedule = ref(false);
+
+const resetDateFilter = () => {
+  filterDate.value = new Date().toISOString().split('T')[0];
+};
+
+const formatDateWithDayFallback = (dateStr) => {
+  if (!dateStr) return 'Any Date';
+  return formatDateWithDay(dateStr);
+};
+
+const filteredAppointments = computed(() => {
+  let list = [...appointments.value];
+  
+  if (filterDate.value) {
+    const filterStr = new Date(filterDate.value).toISOString().split('T')[0];
+    list = list.filter(app => {
+      if (!app.date) return false;
+      const appDateStr = new Date(app.date).toISOString().split('T')[0];
+      return appDateStr === filterStr;
+    });
+  }
+  
+  // Sort by date ascending (oldest first, or chronologically)
+  list.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return list;
+});
+
+const openDetails = (app) => {
+  selectedApp.value = app;
+  detailsDialog.value = true;
+};
+
+
 
 const scheduleForm = ref({
   slotDuration: 30,
@@ -214,15 +376,28 @@ const fetchAppointments = async () => {
   }
 };
 
-const cancelApp = async (appId) => {
+const confirmCancelApp = (app) => {
+  appToCancel.value = app;
+  cancelReason.value = '';
+  cancelDialog.value = true;
+};
+
+const submitCancelApp = async () => {
+  if (!cancelReason.value.trim() || !appToCancel.value) return;
+
   try {
-    await $api(`/appointments/${appId}/cancel`, {
-      method: 'PATCH'
+    await $api(`/appointments/${appToCancel.value._id}/cancel`, {
+      method: 'PATCH',
+      body: { reason: cancelReason.value.trim() }
     });
     $q.notify({
       type: 'positive',
       message: 'Appointment cancelled. Notification sent to patient.'
     });
+    cancelDialog.value = false;
+    detailsDialog.value = false;
+    cancelReason.value = '';
+    appToCancel.value = null;
     fetchAppointments();
   } catch (err) {
     console.error('Cancel failed:', err);

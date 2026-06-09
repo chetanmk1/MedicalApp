@@ -148,10 +148,15 @@
       </div>
 
       <!-- Empty -->
-      <div v-else-if="doctors.length === 0" class="text-center q-py-xl glass-card" style="border-radius: 16px;">
-        <q-icon name="person_off" size="64px" color="grey-4" class="q-mb-md" />
-        <div class="text-h6 text-grey-7 font-weight-bold">No doctors found.</div>
-        <div class="text-grey-6 q-mt-sm">Try changing the specialization filter.</div>
+      <div v-else-if="doctors.length === 0" class="text-center q-py-xl glass-card relative-position" style="border-radius: 16px; min-height: 250px;">
+        <div class="q-pt-md">
+          <q-icon name="person_off" size="64px" color="grey-4" class="q-mb-md" />
+          <div class="text-h6 text-grey-7 font-weight-bold">No doctors found.</div>
+          <div class="text-grey-6 q-mt-sm">Try changing the specialization filter.</div>
+        </div>
+        <div class="absolute-bottom-right q-pa-md">
+          <q-btn outline color="primary" icon="arrow_back" label="Back to Clinics" @click="selectedClinic = null; searchClinicName = ''; fetchClinics();" />
+        </div>
       </div>
 
       <!-- Grid -->

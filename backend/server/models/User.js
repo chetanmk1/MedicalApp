@@ -52,6 +52,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Phone number is required'],
     },
+    age: {
+      type: Number,
+      min: 0,
+      max: 150,
+    },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female', 'Other', 'Prefer not to say'],
+    },
     status: {
       type: String,
       enum: ['active', 'inactive', 'suspended', 'pending_otp'],

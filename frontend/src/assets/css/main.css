@@ -158,3 +158,13 @@ body.body--dark ::-webkit-scrollbar-thumb {
 body.body--dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Fix browser autofill styling for dark mode inputs */
+body.body--dark input:-webkit-autofill,
+body.body--dark input:-webkit-autofill:hover, 
+body.body--dark input:-webkit-autofill:focus, 
+body.body--dark input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #1e293b inset !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
