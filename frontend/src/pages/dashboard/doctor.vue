@@ -484,7 +484,53 @@ const removeLeave = (index) => {
   scheduleForm.value.leaves.splice(index, 1);
 };
 
+const validateSchedule = () => {
+  const days = scheduleForm.value.weeklyAvailability.map(s => s.dayOfWeek);
+  if (days.length !== new Set(days).size) {
+    return 'Duplicate days found in Weekly shifts. Each day can only be added once.';
+  }
+
+  const holDates = scheduleForm.value.holidays.map(h => h.date);
+  if (holDates.length !== new Set(holDates).size) {
+    return 'Duplicate dates found in Holidays & Closures.';
+  }
+
+  for (let i = 0; i < scheduleForm.value.leaves.length; i++) {
+    const l1 = scheduleForm.value.leaves[i];
+    const s1 = new Date(l1.startDate).setHours(0,0,0,0);
+    const e1 = new Date(l1.endDate).setHours(0,0,0,0);
+    
+    if (s1 > e1) return 'Leave start date cannot be after end date.';
+
+    for (let j = i + 1; j < scheduleForm.value.leaves.length; j++) {
+      const l2 = scheduleForm.value.leaves[j];
+      const s2 = new Date(l2.startDate).setHours(0,0,0,0);
+      const e2 = new Date(l2.endDate).setHours(0,0,0,0);
+      if (s1 <= e2 && s2 <= e1) return 'Overlapping dates found in Leave Blocking.';
+    }
+  }
+
+  for (const holiday of scheduleForm.value.holidays) {
+    const hDate = new Date(holiday.date).setHours(0,0,0,0);
+    for (const leave of scheduleForm.value.leaves) {
+      const lStart = new Date(leave.startDate).setHours(0,0,0,0);
+      const lEnd = new Date(leave.endDate).setHours(0,0,0,0);
+      if (hDate >= lStart && hDate <= lEnd) {
+        return `Holiday on ${holiday.date} conflicts with a Leave block (${leave.startDate} to ${leave.endDate}).`;
+      }
+    }
+  }
+
+  return null;
+};
+
 const saveSchedule = async () => {
+  const errorMsg = validateSchedule();
+  if (errorMsg) {
+    $q.notify({ type: 'negative', message: errorMsg });
+    return;
+  }
+
   savingSchedule.value = true;
   try {
     const doctorId = authStore.user.id;
