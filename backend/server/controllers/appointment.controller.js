@@ -206,6 +206,7 @@ export const getAppointments = async (req, res) => {
       .populate('patientId', 'name email phone')
       .populate('doctorId', 'name email specialization')
       .populate('clinicId', 'name city district')
+      .populate('cancelledBy', 'name role')
       .sort({ date: 1, startTime: 1 });
 
     res.json({ appointments });
@@ -220,6 +221,7 @@ export const getAppointments = async (req, res) => {
 // @access  Private
 export const cancelAppointment = async (req, res) => {
   try {
+    const { reason } = req.body;
     const app = await Appointment.findById(req.params.appointmentId);
     if (!app) {
       return res.status(404).json({ message: 'Appointment not found' });
@@ -245,6 +247,8 @@ export const cancelAppointment = async (req, res) => {
     }
 
     app.status = 'cancelled';
+    app.cancellationReason = reason || 'Not provided';
+    app.cancelledBy = req.user._id;
     await app.save();
 
     // Trigger emails

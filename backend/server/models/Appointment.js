@@ -38,6 +38,14 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    cancellationReason: {
+      type: String,
+      trim: true,
+    },
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   {
     timestamps: true,

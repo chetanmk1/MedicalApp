@@ -73,6 +73,17 @@
                   <span><strong>Date:</strong> {{ formatDateWithDay(app.date) }}</span>
                   <br />
                   <span><strong>Time:</strong> {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
+                  <br v-if="app.notes" />
+                  <span v-if="app.notes"><strong>Visit Reason:</strong> {{ app.notes }}</span>
+                  <template v-if="app.status === 'cancelled'">
+                    <br />
+                    <span class="text-negative">
+                      <strong>Cancelled By:</strong> {{ app.cancelledBy?.name || 'Unknown' }}
+                      <span v-if="app.cancelledBy?.role">({{ app.cancelledBy.role }})</span>
+                    </span>
+                    <br />
+                    <span class="text-negative"><strong>Cancel Reason:</strong> {{ app.cancellationReason || 'Not provided' }}</span>
+                  </template>
                 </q-item-label>
               </q-item-section>
 
@@ -293,10 +304,24 @@
               </div>
             </div>
 
-            <div class="row">
-              <div class="col-4 text-grey-7 font-weight-bold">Reason / Notes:</div>
+            <div class="row" :class="{'q-pb-sm': selectedApp.status === 'cancelled', 'border-bottom': selectedApp.status === 'cancelled'}" :style="selectedApp.status === 'cancelled' ? 'border-bottom: 1px solid #e2e8f0;' : ''">
+              <div class="col-4 text-grey-7 font-weight-bold">Visit Reason:</div>
               <div class="col-8 text-slate-800">{{ selectedApp.notes || 'Not provided' }}</div>
             </div>
+
+            <template v-if="selectedApp.status === 'cancelled'">
+              <div class="row q-pb-sm q-pt-sm" style="border-bottom: 1px solid #e2e8f0;">
+                <div class="col-4 text-negative font-weight-bold">Cancelled By:</div>
+                <div class="col-8 text-negative font-weight-bold">
+                  {{ selectedApp.cancelledBy?.name || 'Unknown' }}
+                  <span v-if="selectedApp.cancelledBy?.role">({{ selectedApp.cancelledBy.role }})</span>
+                </div>
+              </div>
+              <div class="row q-pt-sm">
+                <div class="col-4 text-negative font-weight-bold">Cancel Reason:</div>
+                <div class="col-8 text-negative">{{ selectedApp.cancellationReason || 'Not provided' }}</div>
+              </div>
+            </template>
           </div>
         </q-card-section>
         

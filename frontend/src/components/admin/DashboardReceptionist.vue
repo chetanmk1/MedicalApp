@@ -33,6 +33,18 @@
                     <strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})<br>
                     <strong>Slot:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}<br>
                     <strong>Phone:</strong> {{ app.patientId?.phone }}
+                    <template v-if="app.notes">
+                      <br><strong>Visit Reason:</strong> {{ app.notes }}
+                    </template>
+                    <template v-if="app.status === 'cancelled'">
+                      <br>
+                      <span class="text-negative">
+                        <strong>Cancelled By:</strong> {{ app.cancelledBy?.name || 'Unknown' }}
+                        <span v-if="app.cancelledBy?.role">({{ app.cancelledBy.role }})</span>
+                      </span>
+                      <br>
+                      <span class="text-negative"><strong>Cancel Reason:</strong> {{ app.cancellationReason || 'Not provided' }}</span>
+                    </template>
                   </q-item-label>
                 </q-item-section>
 
@@ -53,7 +65,7 @@
                         <q-item clickable v-close-popup @click="openReschedule(app)">
                           <q-item-section>Reschedule</q-item-section>
                         </q-item>
-                        <q-item clickable v-close-popup @click="cancelApp(app._id)" class="text-negative">
+                        <q-item clickable v-close-popup @click="confirmCancelApp(app)" class="text-negative">
                           <q-item-section>Cancel</q-item-section>
                         </q-item>
                       </q-list>
@@ -224,15 +236,48 @@
             </q-popup-proxy>
           </q-input>
           <q-input v-model="rescheduleForm.startTime" outlined dense label="New Start Time (HH:MM)" />
-        </q-card-section>
+          </q-card-section>
 
-        <q-card-actions align="right" class="q-pb-md q-px-md">
-          <q-btn flat label="Back" color="grey-7" v-close-popup />
-          <q-btn unelevated label="Save Changes" color="primary" @click="submitReschedule" :loading="savingReschedule" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-  </div>
+          <q-card-actions align="right" class="q-pa-md bg-grey-1">
+            <q-btn flat label="Cancel" color="grey-8" v-close-popup />
+            <q-btn unelevated color="primary" label="Save Changes" @click="submitReschedule" :loading="savingReschedule" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+
+      <!-- Cancellation Dialog -->
+      <q-dialog v-model="cancelDialog">
+        <q-card style="width: 550px; max-width: 95vw; border-radius: 16px;">
+          <q-card-section class="bg-negative text-white row justify-between items-center">
+            <div class="text-h6 font-weight-bold">Cancel Appointment</div>
+            <q-btn icon="close" flat round dense v-close-popup />
+          </q-card-section>
+
+          <q-card-section class="q-pt-md" v-if="appToCancel">
+            <div class="q-mb-md text-slate-800" style="font-size: 15px;">
+              Are you sure you want to cancel the appointment for <strong class="text-primary">{{ appToCancel.patientId?.name || 'Unknown Patient' }}</strong> on <strong>{{ formatDateWithDay(appToCancel.date) }}</strong> at <strong>{{ formatTime(appToCancel.startTime) }}</strong>?
+            </div>
+            
+            <q-input
+              v-model="cancelReason"
+              type="textarea"
+              outlined
+              bg-color="white"
+              label="Reason for Cancellation (Required)"
+              :rules="[val => !!val || 'Reason is required']"
+              class="q-mt-md"
+              rows="3"
+              placeholder="e.g. Patient requested, Doctor unavailable, etc."
+            />
+          </q-card-section>
+
+          <q-card-actions align="right" class="q-pa-md bg-grey-1">
+            <q-btn flat label="Keep Appointment" color="grey-8" v-close-popup />
+            <q-btn unelevated color="negative" label="Confirm Cancellation" @click="submitCancelApp" :disable="!cancelReason || !cancelReason.trim()" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+    </div>
 </template>
 
 <script setup>
@@ -248,7 +293,7 @@ const $q = useQuasar();
 const { patients, searchPatients } = usePatients();
 const { appointments, fetchAppointments, createAppointment, cancelAppointment, rescheduleAppointment, checkInAppointment } = useAppointments();
 const { fetchDoctors, getAvailableSlots } = useDoctors();
-const { formatDate, formatTime } = useFormat();
+const { formatDate, formatTime, formatDateWithDay } = useFormat();
 
 const { activeTab: tab } = useDashboardTab();
 
@@ -277,11 +322,12 @@ const submittingBooking = ref(false);
 // Reschedule Dialog State
 const rescheduleDialog = ref(false);
 const rescheduleAppId = ref(null);
-const rescheduleForm = ref({
-  date: '',
-  startTime: ''
-});
+const rescheduleForm = ref({ date: '', startTime: '' });
 const savingReschedule = ref(false);
+
+const cancelDialog = ref(false);
+const cancelReason = ref('');
+const appToCancel = ref(null);
 
 const todayStr = computed(() => {
   return new Date().toISOString().split('T')[0];
@@ -406,13 +452,23 @@ const handleCheckIn = async (appId) => {
   }
 };
 
-const cancelApp = async (appId) => {
+const confirmCancelApp = (app) => {
+  appToCancel.value = app;
+  cancelReason.value = '';
+  cancelDialog.value = true;
+};
+
+const submitCancelApp = async () => {
+  if (!cancelReason.value.trim() || !appToCancel.value) return;
   try {
-    await cancelAppointment(appId);
+    await cancelAppointment(appToCancel.value._id, cancelReason.value.trim());
     $q.notify({
       type: 'positive',
       message: 'Appointment cancelled.'
     });
+    cancelDialog.value = false;
+    cancelReason.value = '';
+    appToCancel.value = null;
     loadAppointments();
   } catch (err) {
     console.error(err);

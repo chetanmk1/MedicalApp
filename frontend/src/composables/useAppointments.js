@@ -38,12 +38,13 @@ export const useAppointments = () => {
     }
   };
 
-  const cancelAppointment = async (appointmentId) => {
+  const cancelAppointment = async (appointmentId, reason = '') => {
     loading.value = true;
     error.value = null;
     try {
       return await $api(`/appointments/${appointmentId}/cancel`, {
         method: 'PATCH',
+        body: { reason }
       });
     } catch (err) {
       error.value = err._data?.message || 'Failed to cancel appointment';
