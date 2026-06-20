@@ -15,7 +15,7 @@
         <div class="row q-gutter-x-sm items-center">
           <q-select
             v-model="filterStatus"
-            :options="[{label: 'All', value: 'all'}, {label: 'Confirmed', value: 'confirmed'}, {label: 'Pending', value: 'pending'}, {label: 'Completed', value: 'completed'}, {label: 'Cancelled', value: 'cancelled'}]"
+            :options="[{label: 'All', value: 'all'}, {label: 'Confirmed', value: 'confirmed'}, {label: 'Completed', value: 'completed'}, {label: 'Cancelled', value: 'cancelled'}]"
             dense outlined bg-color="white"
             emit-value map-options
             style="min-width: 130px;"
