@@ -228,7 +228,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const $q = useQuasar();
 const route = useRoute();
-const { user, userRole, logout, allowedRoles } = useAuth();
+const { user, userRole, logout, allowedRoles, isImpersonating, stopImpersonating } = useAuth();
 const { canSwitchTo, performSwitch } = useRoleSwitching();
 const { activeTab } = useDashboardTab();
 
@@ -260,10 +260,7 @@ const headerStyle = computed(() => {
   return 'background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);';
 });
 
-const isImpersonating = computed(() => {
-  if (!import.meta.client) return false;
-  return !!sessionStorage.getItem('med_admin_original_token');
-});
+
 
 const switchableRoles = computed(() => {
   // Return roles that are switchable (patient is filtered out)
@@ -297,24 +294,13 @@ const changeRole = async (targetRole) => {
 };
 
 const stopImpersonation = () => {
-  if (import.meta.client) {
-    const originalToken = sessionStorage.getItem('med_admin_original_token');
-    const originalUser = JSON.parse(sessionStorage.getItem('med_admin_original_user') || 'null');
-    
-    if (originalToken && originalUser) {
-      const authStore = useAuthStore();
-      authStore.setSession(originalUser, originalToken);
-      sessionStorage.removeItem('med_admin_original_token');
-      sessionStorage.removeItem('med_admin_original_user');
-      
-      $q.notify({
-        type: 'positive',
-        message: 'Returned to Super Admin session'
-      });
-      activeTab.value = 'dashboard';
-      navigateTo('/admin/dashboard');
-    }
-  }
+  stopImpersonating();
+  $q.notify({
+    type: 'positive',
+    message: 'Returned to Super Admin session'
+  });
+  activeTab.value = 'dashboard';
+  navigateTo('/admin/dashboard');
 };
 
 const handleLogout = async () => {

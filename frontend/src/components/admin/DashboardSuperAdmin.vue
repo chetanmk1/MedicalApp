@@ -462,14 +462,21 @@ const changeStatus = async (id, status) => {
   }
 };
 
-const handleImpersonate = async (clinic) => {
-  try {
-    $q.loading.show({ message: `Accessing clinic admin context...` });
-    const { $api } = useNuxtApp();
-    const userData = await $api('/users', {
-      params: { clinicId: clinic._id }
-    });
-    const clinicAdminUser = (userData.users || []).find(u => u.role === 'clinic_admin');
+const handleImpersonate = (clinic) => {
+  $q.dialog({
+    title: 'Confirm Impersonation',
+    message: `Are you sure you want to impersonate the administrator of ${clinic.name}? Your dashboard will switch to their view.`,
+    cancel: true,
+    persistent: true,
+    color: 'primary'
+  }).onOk(async () => {
+    try {
+      $q.loading.show({ message: `Accessing clinic admin context...` });
+      const { $api } = useNuxtApp();
+      const userData = await $api('/users', {
+        params: { clinicId: clinic._id }
+      });
+      const clinicAdminUser = (userData.users || []).find(u => u.role === 'clinic_admin');
     if (!clinicAdminUser) {
       $q.notify({
         type: 'warning',
@@ -478,15 +485,7 @@ const handleImpersonate = async (clinic) => {
       return;
     }
 
-    const originalToken = token.value;
-    const originalUser = user.value;
-
-    const data = await impersonate(clinicAdminUser._id);
-    
-    if (import.meta.client) {
-      sessionStorage.setItem('med_admin_original_token', originalToken);
-      sessionStorage.setItem('med_admin_original_user', JSON.stringify(originalUser));
-    }
+    await impersonate(clinicAdminUser._id);
 
     $q.notify({
       type: 'positive',
@@ -495,13 +494,14 @@ const handleImpersonate = async (clinic) => {
 
     navigateTo('/admin/dashboard');
   } catch (err) {
-    $q.notify({
-      type: 'negative',
-      message: err.message || 'Impersonation failed'
-    });
-  } finally {
-    $q.loading.hide();
-  }
+      $q.notify({
+        type: 'negative',
+        message: err.message || 'Impersonation failed'
+      });
+    } finally {
+      $q.loading.hide();
+    }
+  });
 };
 
 const submitClinic = async () => {

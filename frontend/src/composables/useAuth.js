@@ -59,16 +59,21 @@ export const useAuth = () => {
     return data;
   };
 
+  const isImpersonating = computed(() => authStore.isImpersonating);
+
   const impersonate = async (userId) => {
     const data = await $api('/auth/impersonate', {
       method: 'POST',
       body: { userId }
     });
     if (data && data.token) {
-      // Save impersonated session
-      authStore.setSession(data.user, data.token);
+      authStore.startImpersonating(data.user, data.token);
     }
     return data;
+  };
+
+  const stopImpersonating = () => {
+    authStore.stopImpersonating();
   };
 
   return {
@@ -77,6 +82,7 @@ export const useAuth = () => {
     isLoggedIn,
     userRole,
     allowedRoles,
+    isImpersonating,
     login,
     register,
     verifyOtp,
@@ -84,5 +90,6 @@ export const useAuth = () => {
     fetchProfile,
     switchRole,
     impersonate,
+    stopImpersonating,
   };
 };
