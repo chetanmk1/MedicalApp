@@ -330,7 +330,14 @@
           <div class="row justify-between items-center q-mb-md">
             <div class="text-subtitle1 font-weight-bold text-slate-800">Appointment List</div>
             <div class="row q-gutter-x-sm items-center">
-              <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 200px; cursor: pointer;" readonly placeholder="Filter by date (All)">
+              <q-select
+                v-model="filterStatus"
+                :options="[{label: 'All', value: 'all'}, {label: 'Confirmed', value: 'confirmed'}, {label: 'Pending', value: 'pending'}, {label: 'Completed', value: 'completed'}, {label: 'Cancelled', value: 'cancelled'}]"
+                dense outlined bg-color="white"
+                emit-value map-options
+                style="min-width: 130px;"
+              />
+              <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 150px; cursor: pointer;" readonly placeholder="Filter by date">
                 <template v-slot:append>
                   <q-icon name="event" class="cursor-pointer" :color="$q.dark.isActive ? 'grey-3' : 'grey-8'" />
                 </template>
@@ -342,7 +349,7 @@
                   </q-date>
                 </q-popup-proxy>
               </q-input>
-              <q-btn v-if="filterDate" outline color="primary" label="Reset" @click="filterDate = ''" />
+              <q-btn v-if="filterDate || filterStatus !== 'all'" outline color="primary" label="Reset" @click="filterDate = ''; filterStatus = 'all'" />
               <q-btn flat icon="refresh" color="grey-6" @click="loadAppointments">
                 <q-tooltip>Reload Ledger</q-tooltip>
               </q-btn>
@@ -354,14 +361,18 @@
             <div v-else>No bookings recorded.</div>
           </div>
 
-          <q-scroll-area v-else :style="{ height: 'calc(100vh - 290px)', minHeight: '450px', borderRadius: '12px', backgroundColor: $q.dark.isActive ? '#181818' : '#f1f5f9' }">
+          <div class="relative-position" v-else>
+            <q-scroll-area ref="appointmentScrollArea" @scroll="onAppointmentScroll" :style="{ height: 'calc(100vh - 290px)', minHeight: '450px', borderRadius: '12px', backgroundColor: $q.dark.isActive ? '#181818' : '#f8fafc' }">
             <div class="q-pa-md">
               <q-card 
                 v-for="app in filteredAppointments" 
                 :key="app._id" 
+                flat
                 bordered 
-                :class="['q-mb-md appointment-card shadow-1 hover-shadow transition-all duration-300', $q.dark.isActive ? 'bg-grey-9 text-grey-2' : 'bg-white text-slate-800']"
+                :class="['q-mb-md appointment-card shadow-sm hover-shadow cursor-pointer relative-position transition-all duration-300', $q.dark.isActive ? 'bg-grey-9 text-grey-2' : 'bg-white text-slate-800']"
                 :style="{ borderLeft: `5px solid ${getStatusHexColor(app.status)}`, borderRadius: '12px' }"
+                v-ripple
+                @click="openDetails(app)"
               >
                 <q-card-section class="q-pa-md">
                   <div class="row items-center justify-between q-col-gutter-y-sm">
@@ -390,8 +401,8 @@
                       />
                       
                       <div class="row items-center q-gutter-xs" v-if="app.status !== 'cancelled' && app.status !== 'completed'">
-                        <q-btn outline dense color="primary" icon="calendar_today" label="Reschedule" size="sm" class="q-px-sm" @click="openReschedule(app)" />
-                        <q-btn unelevated dense color="negative" icon="cancel" label="Cancel" size="sm" class="q-px-sm" @click="confirmCancelApp(app)" />
+                        <q-btn outline dense color="primary" icon="calendar_today" label="Reschedule" size="sm" class="q-px-sm" @click.stop="openReschedule(app)" />
+                        <q-btn unelevated dense color="negative" icon="cancel" label="Cancel" size="sm" class="q-px-sm" @click.stop="confirmCancelApp(app)" />
                       </div>
                     </div>
                   </div>
@@ -451,10 +462,113 @@
                 </q-card-section>
               </q-card>
             </div>
-          </q-scroll-area>
+            </q-scroll-area>
+            
+            <transition appear enter-active-class="animated fadeIn" leave-active-class="animated fadeOut">
+              <q-btn
+                v-show="showScrollTop"
+                round
+                size="md"
+                icon="keyboard_arrow_up"
+                color="primary"
+                class="absolute-bottom-right shadow-10 transition-all"
+                style="z-index: 10; margin: 0 24px 24px 0;"
+                @click="scrollToTop"
+              >
+                <q-tooltip class="bg-primary text-body2 shadow-4" :offset="[10, 10]">Scroll to top</q-tooltip>
+              </q-btn>
+            </transition>
+          </div>
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
+
+    <!-- Appointment Details Dialog -->
+    <q-dialog v-model="detailsDialog">
+      <q-card style="width: 650px; max-width: 95vw; border-radius: 16px;">
+        <q-card-section class="bg-primary text-white row justify-between items-center">
+          <div class="text-h6 font-weight-bold">Appointment Details</div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+        
+        <q-card-section class="q-pt-lg" v-if="selectedApp">
+          <div class="row items-center q-mb-md">
+            <q-avatar size="64px" color="indigo-1" text-color="primary" class="q-mr-md font-weight-bold" style="font-size: 24px;">
+              {{ selectedApp.patientId?.name ? selectedApp.patientId.name.charAt(0).toUpperCase() : '?' }}
+            </q-avatar>
+            <div>
+              <div class="text-h6 font-weight-bold text-slate-800">{{ selectedApp.patientId?.name || 'Unknown Patient' }}</div>
+              <q-chip size="sm" :color="getAppStatusColor(selectedApp.status)" text-color="white" :label="selectedApp.status.toUpperCase()" class="q-ma-none" />
+            </div>
+          </div>
+          
+          <q-separator class="q-my-md" />
+          
+          <div class="q-gutter-y-md">
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Patient Name:</div>
+              <div class="col-8 text-slate-800 font-weight-bold">{{ selectedApp.patientId?.name || 'Unknown Patient' }}</div>
+            </div>
+
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Doctor:</div>
+              <div class="col-8 text-slate-800">Dr. {{ selectedApp.doctorId?.name }} ({{ selectedApp.doctorId?.specialization }})</div>
+            </div>
+
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Date & Time:</div>
+              <div class="col-8 text-slate-800">
+                {{ formatDateWithDay(selectedApp.date) }}<br/>
+                {{ formatTime(selectedApp.startTime) }} - {{ formatTime(selectedApp.endTime) }}
+              </div>
+            </div>
+            
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Phone Number:</div>
+              <div class="col-8 text-slate-800">{{ selectedApp.patientId?.phone || 'N/A' }}</div>
+            </div>
+            
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Email:</div>
+              <div class="col-8 text-slate-800">{{ selectedApp.patientId?.email || 'N/A' }}</div>
+            </div>
+            
+            <div class="row q-pb-sm" style="border-bottom: 1px solid #e2e8f0;">
+              <div class="col-4 text-grey-7 font-weight-bold">Age / Gender:</div>
+              <div class="col-8 text-slate-800">
+                {{ selectedApp.patientId?.age ? selectedApp.patientId.age + ' yrs' : 'N/A' }} / 
+                {{ selectedApp.patientId?.gender ? selectedApp.patientId.gender : 'N/A' }}
+              </div>
+            </div>
+
+            <div class="row" :class="{'q-pb-sm': selectedApp.status === 'cancelled', 'border-bottom': selectedApp.status === 'cancelled'}" :style="selectedApp.status === 'cancelled' ? 'border-bottom: 1px solid #e2e8f0;' : ''">
+              <div class="col-4 text-grey-7 font-weight-bold">Visit Reason:</div>
+              <div class="col-8 text-slate-800">{{ selectedApp.notes || 'Not provided' }}</div>
+            </div>
+
+            <template v-if="selectedApp.status === 'cancelled'">
+              <div class="row q-pb-sm q-pt-sm" style="border-bottom: 1px solid #e2e8f0;">
+                <div class="col-4 text-negative font-weight-bold">Cancelled By:</div>
+                <div class="col-8 text-negative font-weight-bold">
+                  {{ selectedApp.cancelledBy?.name || 'Unknown' }}
+                  <span v-if="selectedApp.cancelledBy?.role">({{ selectedApp.cancelledBy.role }})</span>
+                </div>
+              </div>
+              <div class="row q-pt-sm">
+                <div class="col-4 text-negative font-weight-bold">Cancel Reason:</div>
+                <div class="col-8 text-negative">{{ selectedApp.cancellationReason || 'Not provided' }}</div>
+              </div>
+            </template>
+          </div>
+        </q-card-section>
+        
+        <q-card-actions align="right" class="q-pa-md">
+          <q-btn v-if="selectedApp && selectedApp.status !== 'cancelled' && selectedApp.status !== 'completed'" outline color="primary" label="Reschedule" @click="openReschedule(selectedApp)" />
+          <q-btn v-if="selectedApp && selectedApp.status !== 'cancelled' && selectedApp.status !== 'completed'" unelevated color="negative" label="Cancel Appointment" @click="confirmCancelApp(selectedApp)" />
+          <q-btn unelevated color="primary" label="Close" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
 
     <!-- Reschedule Dialog -->
     <q-dialog v-model="rescheduleDialog">
@@ -572,6 +686,28 @@ const cancelReason = ref('');
 const appToCancel = ref(null);
 
 const filterDate = ref('');
+const filterStatus = ref('all');
+
+const detailsDialog = ref(false);
+const selectedApp = ref(null);
+
+const appointmentScrollArea = ref(null);
+const showScrollTop = ref(false);
+
+const onAppointmentScroll = (info) => {
+  showScrollTop.value = info.verticalPosition > 200;
+};
+
+const scrollToTop = () => {
+  if (appointmentScrollArea.value) {
+    appointmentScrollArea.value.setScrollPosition('vertical', 0, 300);
+  }
+};
+
+const openDetails = (app) => {
+  selectedApp.value = app;
+  detailsDialog.value = true;
+};
 
 const filteredAppointments = computed(() => {
   let list = [...appointments.value];
@@ -586,6 +722,9 @@ const filteredAppointments = computed(() => {
       const d = new Date(app.date);
       return d.getFullYear() === filterYear && d.getMonth() === filterMonth && d.getDate() === filterDay;
     });
+  }
+  if (filterStatus.value !== 'all') {
+    list = list.filter(app => app.status === filterStatus.value);
   }
   list.sort((a, b) => new Date(a.date) - new Date(b.date));
   return list;
