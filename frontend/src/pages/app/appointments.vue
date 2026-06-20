@@ -12,7 +12,24 @@
     <q-card flat bordered style="border-radius: 16px;">
       <q-card-section class="row justify-between items-center q-pb-none">
         <div class="text-h6 font-weight-bold text-slate-800">Booking History</div>
-        <q-btn flat icon="refresh" color="grey-6" label="Refresh" @click="loadAppointments" />
+        <div class="row q-gutter-x-sm items-center">
+          <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 200px; cursor: pointer;" readonly placeholder="Filter by date (All)">
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer" :color="$q.dark.isActive ? 'grey-3' : 'grey-8'" />
+            </template>
+            <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+              <q-date v-model="filterDate" mask="YYYY-MM-DD">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-date>
+            </q-popup-proxy>
+          </q-input>
+          <q-btn v-if="filterDate" outline color="primary" label="Reset" @click="filterDate = ''" />
+          <q-btn flat icon="refresh" color="grey-6" @click="loadAppointments">
+            <q-tooltip>Reload</q-tooltip>
+          </q-btn>
+        </div>
       </q-card-section>
 
       <q-card-section>
@@ -20,14 +37,17 @@
           <q-spinner-dots color="primary" size="40px" />
         </div>
 
-        <div v-else-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
-          <q-icon name="event_busy" size="48px" class="q-mb-md" />
-          <div>You have no registered appointments.</div>
-          <q-btn outline color="primary" label="Find a Clinic" to="/app" class="q-mt-md" />
+        <div v-else-if="filteredAppointments.length === 0" class="text-center q-py-xl text-grey-6">
+          <div v-if="filterDate">No appointments found for the selected date.</div>
+          <div v-else>
+            <q-icon name="event_busy" size="48px" class="q-mb-md" />
+            <div>You have no registered appointments.</div>
+            <q-btn outline color="primary" label="Find a Clinic" to="/app" class="q-mt-md" />
+          </div>
         </div>
 
         <q-list v-else separator>
-          <q-item v-for="app in appointments" :key="app._id" class="q-py-md q-px-none">
+          <q-item v-for="app in filteredAppointments" :key="app._id" class="q-py-md q-px-none">
             <q-item-section>
               <div class="row items-center q-gutter-x-sm">
                 <span class="text-subtitle2 font-weight-bold text-slate-800">Dr. {{ app.doctorId?.name }}</span>
@@ -200,6 +220,26 @@ const savingReschedule = ref(false);
 const cancelDialog = ref(false);
 const cancelReason = ref('');
 const appToCancel = ref(null);
+
+const filterDate = ref('');
+
+const filteredAppointments = computed(() => {
+  let list = [...appointments.value];
+  if (filterDate.value) {
+    const filterParts = filterDate.value.split('-');
+    const filterYear = parseInt(filterParts[0]);
+    const filterMonth = parseInt(filterParts[1]) - 1;
+    const filterDay = parseInt(filterParts[2]);
+    
+    list = list.filter(app => {
+      if (!app.date) return false;
+      const d = new Date(app.date);
+      return d.getFullYear() === filterYear && d.getMonth() === filterMonth && d.getDate() === filterDay;
+    });
+  }
+  list.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return list;
+});
 
 const todayStr = computed(() => {
   return new Date().toISOString().split('T')[0];

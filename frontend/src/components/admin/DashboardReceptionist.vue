@@ -13,17 +13,33 @@
       <!-- Patient Lookup & Ledger Tab -->
       <q-tab-panel name="lookup" class="q-pa-none">
         <q-card flat bordered style="border-radius: 16px;">
-          <q-card-section class="text-subtitle1 font-weight-bold text-slate-800">
-            Appointments Ledger
+          <q-card-section class="row justify-between items-center text-subtitle1 font-weight-bold text-slate-800">
+            <div>Appointments Ledger</div>
+            <div class="row q-gutter-x-sm items-center">
+              <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 200px; cursor: pointer;" readonly placeholder="Filter by date (All)">
+                <template v-slot:append>
+                  <q-icon name="event" class="cursor-pointer" :color="$q.dark.isActive ? 'grey-3' : 'grey-8'" />
+                </template>
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="filterDate" mask="YYYY-MM-DD">
+                    <div class="row items-center justify-end">
+                      <q-btn v-close-popup label="Close" color="primary" flat />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-input>
+              <q-btn v-if="filterDate" outline color="primary" label="Reset" @click="filterDate = ''" />
+            </div>
           </q-card-section>
           <q-separator />
           <q-card-section class="q-pa-none">
-            <div v-if="appointments.length === 0" class="text-center q-py-xl text-grey-6">
-              No appointments recorded for today.
+            <div v-if="filteredAppointments.length === 0" class="text-center q-py-xl text-grey-6">
+              <div v-if="filterDate">No appointments found for the selected date.</div>
+              <div v-else>No appointments recorded.</div>
             </div>
 
             <q-list separator v-else style="border-radius: 12px;">
-              <q-item v-for="app in appointments" :key="app._id" class="q-py-md">
+              <q-item v-for="app in filteredAppointments" :key="app._id" class="q-py-md">
                 <q-item-section>
                   <div class="row items-center q-gutter-x-sm">
                     <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
@@ -328,6 +344,26 @@ const savingReschedule = ref(false);
 const cancelDialog = ref(false);
 const cancelReason = ref('');
 const appToCancel = ref(null);
+
+const filterDate = ref('');
+
+const filteredAppointments = computed(() => {
+  let list = [...appointments.value];
+  if (filterDate.value) {
+    const filterParts = filterDate.value.split('-');
+    const filterYear = parseInt(filterParts[0]);
+    const filterMonth = parseInt(filterParts[1]) - 1;
+    const filterDay = parseInt(filterParts[2]);
+    
+    list = list.filter(app => {
+      if (!app.date) return false;
+      const d = new Date(app.date);
+      return d.getFullYear() === filterYear && d.getMonth() === filterMonth && d.getDate() === filterDay;
+    });
+  }
+  list.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return list;
+});
 
 const todayStr = computed(() => {
   return new Date().toISOString().split('T')[0];

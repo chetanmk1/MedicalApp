@@ -33,7 +33,7 @@
           <div class="row justify-between items-center q-mb-md">
             <div class="text-subtitle1 font-weight-bold text-slate-800">Booked Patients List</div>
             <div class="row q-gutter-x-sm items-center">
-              <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 200px; cursor: pointer;" readonly>
+              <q-input v-model="filterDate" dense outlined bg-color="white" style="max-width: 200px; cursor: pointer;" readonly placeholder="Filter by date (All)">
                 <template v-slot:append>
                   <q-icon name="event" class="cursor-pointer" :color="$q.dark.isActive ? 'grey-3' : 'grey-8'" />
                 </template>
@@ -45,7 +45,7 @@
                   </q-date>
                 </q-popup-proxy>
               </q-input>
-              <q-btn unelevated color="primary" outline label="Reset Date" @click="resetDateFilter" />
+              <q-btn v-if="filterDate" outline color="primary" label="Reset" @click="filterDate = ''" />
               <q-btn flat icon="refresh" color="grey-6" @click="fetchAppointments">
                 <q-tooltip>Reload</q-tooltip>
               </q-btn>
@@ -56,8 +56,11 @@
             <div class="q-pt-md">
               <q-icon name="event_busy" size="64px" color="negative" class="q-mb-md" style="opacity: 0.7;" />
               <div class="text-h6 text-negative font-weight-bold">No Appointments Found</div>
-              <div class="text-subtitle1 text-grey-7 q-mt-sm">
-                No appointments yet for the selected date: <strong class="text-slate-800">{{ formatDateWithDayFallback(filterDate) }}</strong>.
+              <div class="text-subtitle1 text-grey-7 q-mt-sm" v-if="filterDate">
+                No appointments found for the selected date: <strong class="text-slate-800">{{ formatDateWithDayFallback(filterDate) }}</strong>.
+              </div>
+              <div class="text-subtitle1 text-grey-7 q-mt-sm" v-else>
+                No appointments found in the system.
               </div>
             </div>
           </div>
@@ -383,17 +386,13 @@ const { formatDate, formatTime, formatDateWithDay } = useFormat();
 
 
 const appointments = ref([]);
-const filterDate = ref(new Date().toISOString().split('T')[0]); // Default to today
+const filterDate = ref(''); // Default to all
 const detailsDialog = ref(false);
 const cancelDialog = ref(false);
 const selectedApp = ref(null);
 const appToCancel = ref(null);
 const cancelReason = ref('');
 const savingSchedule = ref(false);
-
-const resetDateFilter = () => {
-  filterDate.value = new Date().toISOString().split('T')[0];
-};
 
 const formatDateWithDayFallback = (dateStr) => {
   if (!dateStr) return 'Any Date';
@@ -404,11 +403,15 @@ const filteredAppointments = computed(() => {
   let list = [...appointments.value];
   
   if (filterDate.value) {
-    const filterStr = new Date(filterDate.value).toISOString().split('T')[0];
+    const filterParts = filterDate.value.split('-');
+    const filterYear = parseInt(filterParts[0]);
+    const filterMonth = parseInt(filterParts[1]) - 1;
+    const filterDay = parseInt(filterParts[2]);
+    
     list = list.filter(app => {
       if (!app.date) return false;
-      const appDateStr = new Date(app.date).toISOString().split('T')[0];
-      return appDateStr === filterStr;
+      const d = new Date(app.date);
+      return d.getFullYear() === filterYear && d.getMonth() === filterMonth && d.getDate() === filterDay;
     });
   }
   
