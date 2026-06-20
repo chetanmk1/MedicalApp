@@ -354,39 +354,104 @@
             <div v-else>No bookings recorded.</div>
           </div>
 
-          <q-list v-else separator bordered style="border-radius: 12px;">
-            <q-item v-for="app in filteredAppointments" :key="app._id" class="q-py-md">
-              <q-item-section>
-                <div class="row items-center q-gutter-x-sm">
-                  <span class="text-subtitle2 font-weight-bold text-slate-800">{{ app.patientId?.name }}</span>
-                  <q-chip size="sm" :color="getAppStatusColor(app.status)" text-color="white" :label="app.status.toUpperCase()" />
-                </div>
-                <q-item-label caption class="q-mt-xs">
-                  <span><strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})</span>
-                  <br />
-                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
-                  <br v-if="app.notes" />
-                  <span v-if="app.notes"><strong>Visit Reason:</strong> {{ app.notes }}</span>
-                  <template v-if="app.status === 'cancelled'">
-                    <br />
-                    <span class="text-negative">
-                      <strong>Cancelled By:</strong> {{ app.cancelledBy?.name || 'Unknown' }}
-                      <span v-if="app.cancelledBy?.role">({{ app.cancelledBy.role }})</span>
-                    </span>
-                    <br />
-                    <span class="text-negative"><strong>Cancel Reason:</strong> {{ app.cancellationReason || 'Not provided' }}</span>
-                  </template>
-                </q-item-label>
-              </q-item-section>
+          <q-scroll-area v-else :style="{ height: 'calc(100vh - 290px)', minHeight: '450px', borderRadius: '12px', backgroundColor: $q.dark.isActive ? '#181818' : '#f1f5f9' }">
+            <div class="q-pa-md">
+              <q-card 
+                v-for="app in filteredAppointments" 
+                :key="app._id" 
+                bordered 
+                :class="['q-mb-md appointment-card shadow-1 hover-shadow transition-all duration-300', $q.dark.isActive ? 'bg-grey-9 text-grey-2' : 'bg-white text-slate-800']"
+                :style="{ borderLeft: `5px solid ${getStatusHexColor(app.status)}`, borderRadius: '12px' }"
+              >
+                <q-card-section class="q-pa-md">
+                  <div class="row items-center justify-between q-col-gutter-y-sm">
+                    <!-- Left: Patient Avatar & Initials -->
+                    <div class="row items-center col-12 col-sm-6 q-gutter-x-md">
+                      <q-avatar color="blue-1" text-color="blue-8" size="42px" class="font-weight-bold shadow-1">
+                        {{ getInitials(app.patientId?.name) }}
+                      </q-avatar>
+                      <div>
+                        <div :class="['text-subtitle1 font-weight-bold', $q.dark.isActive ? 'text-white' : 'text-slate-900']">{{ app.patientId?.name }}</div>
+                        <div class="text-caption text-grey-6 row items-center q-gutter-x-xs">
+                          <q-icon name="phone" size="14px" />
+                          <span>{{ app.patientId?.phone || 'No phone' }}</span>
+                        </div>
+                      </div>
+                    </div>
 
-              <q-item-section side v-if="app.status !== 'cancelled' && app.status !== 'completed'">
-                <div class="row items-center q-gutter-sm">
-                  <q-btn outline dense color="grey-7" icon="calendar_today" label="Reschedule" size="sm" @click="openReschedule(app)" />
-                  <q-btn unelevated dense color="negative" label="Cancel" size="sm" @click="confirmCancelApp(app)" />
-                </div>
-              </q-item-section>
-            </q-item>
-          </q-list>
+                    <!-- Right: Status Badge & Actions -->
+                    <div class="row items-center col-12 col-sm-6 justify-end q-gutter-sm">
+                      <q-chip 
+                        size="sm" 
+                        :color="getAppStatusColor(app.status)" 
+                        text-color="white" 
+                        class="text-weight-bold q-px-md"
+                        :label="app.status.toUpperCase().replace('_', ' ')" 
+                      />
+                      
+                      <div class="row items-center q-gutter-xs" v-if="app.status !== 'cancelled' && app.status !== 'completed'">
+                        <q-btn outline dense color="primary" icon="calendar_today" label="Reschedule" size="sm" class="q-px-sm" @click="openReschedule(app)" />
+                        <q-btn unelevated dense color="negative" icon="cancel" label="Cancel" size="sm" class="q-px-sm" @click="confirmCancelApp(app)" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <q-separator class="q-my-md" />
+
+                  <!-- Details Grid -->
+                  <div :class="['row q-col-gutter-md', $q.dark.isActive ? 'text-grey-3' : 'text-slate-800']">
+                    <div class="col-12 col-sm-4 row items-center q-gutter-x-sm">
+                      <q-icon name="medication" size="20px" color="primary" />
+                      <div>
+                        <div class="text-caption text-grey-6">Assigned Doctor</div>
+                        <div class="text-weight-medium">Dr. {{ app.doctorId?.name }}</div>
+                        <div class="text-caption text-grey-5">{{ app.doctorId?.specialization }}</div>
+                      </div>
+                    </div>
+
+                    <div class="col-12 col-sm-4 row items-center q-gutter-x-sm">
+                      <q-icon name="schedule" size="20px" color="secondary" />
+                      <div>
+                        <div class="text-caption text-grey-6">Date & Time Slot</div>
+                        <div class="text-weight-medium">{{ formatDate(app.date) }}</div>
+                        <div class="text-caption text-secondary text-weight-bold">
+                          {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-12 col-sm-4 row items-center q-gutter-x-sm" v-if="app.notes">
+                      <q-icon name="assignment" size="20px" color="amber-8" />
+                      <div>
+                        <div class="text-caption text-grey-6">Visit Reason</div>
+                        <div class="text-weight-medium text-italic">"{{ app.notes }}"</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Cancellation Details Banner -->
+                  <div 
+                    v-if="app.status === 'cancelled'" 
+                    :class="['q-mt-md q-pa-md border-radius-8 row items-start q-gutter-x-sm', $q.dark.isActive ? 'bg-red-950 text-red-100' : 'bg-red-50 text-red-900']"
+                    :style="{ borderRadius: '8px', border: $q.dark.isActive ? '1px solid #7f1d1d' : '1px solid #fecaca' }"
+                  >
+                    <q-icon name="info" size="20px" color="negative" class="q-mt-xs" />
+                    <div>
+                      <div class="text-weight-bold">Cancellation Audit Details</div>
+                      <div class="text-caption">
+                        <strong>Cancelled By:</strong> {{ app.cancelledBy?.name || 'Unknown' }} 
+                        <span v-if="app.cancelledBy?.role" class="text-weight-medium">({{ app.cancelledBy.role.replace('_', ' ') }})</span>
+                      </div>
+                      <div class="text-caption">
+                        <strong>Reason:</strong> {{ app.cancellationReason || 'No reason provided.' }}
+                      </div>
+                    </div>
+                  </div>
+
+                </q-card-section>
+              </q-card>
+            </div>
+          </q-scroll-area>
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
@@ -807,5 +872,25 @@ const getAppStatusColor = (status) => {
     case 'cancelled': return 'red-6';
     default: return 'grey';
   }
+};
+
+const getStatusHexColor = (status) => {
+  switch (status) {
+    case 'confirmed': return '#10b981';
+    case 'checked_in': return '#0d9488';
+    case 'pending': return '#f97316';
+    case 'completed': return '#3b82f6';
+    case 'cancelled': return '#ef4444';
+    default: return '#9ca3af';
+  }
+};
+
+const getInitials = (name) => {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name[0].toUpperCase();
 };
 </script>
