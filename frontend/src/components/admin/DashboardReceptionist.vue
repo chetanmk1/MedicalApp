@@ -350,7 +350,7 @@ const filterDate = ref('');
 const filteredAppointments = computed(() => {
   let list = [...appointments.value];
   if (filterDate.value) {
-    const filterParts = filterDate.value.split('-');
+    const filterParts = filterDate.value.split(/[-/]/);
     const filterYear = parseInt(filterParts[0]);
     const filterMonth = parseInt(filterParts[1]) - 1;
     const filterDay = parseInt(filterParts[2]);

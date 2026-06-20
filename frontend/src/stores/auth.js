@@ -20,17 +20,19 @@ export const useAuthStore = defineStore('auth', {
       this.user = user;
       this.token = token;
       
-      // Store token in localStorage for page reloads (refresh token will recover full session if this is lost, but keeping access token here keeps current requests valid)
-      if (import.meta.client) {
-        localStorage.setItem('med_token', token);
-      }
+      const tokenCookie = useCookie('med_token', { 
+        maxAge: 60 * 60 * 24 * 7, 
+        path: '/',
+        sameSite: 'lax', // Protects against CSRF attacks
+        secure: process.env.NODE_ENV === 'production' // Only send over HTTPS in production
+      });
+      tokenCookie.value = token;
     },
     clearSession() {
       this.user = null;
       this.token = null;
-      if (import.meta.client) {
-        localStorage.removeItem('med_token');
-      }
+      const tokenCookie = useCookie('med_token', { path: '/' });
+      tokenCookie.value = null;
     },
     async fetchProfile() {
       try {
