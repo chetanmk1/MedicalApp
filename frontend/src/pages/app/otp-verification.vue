@@ -95,7 +95,7 @@ const handleVerify = async () => {
     await verifyOtp(email.value, otpCode.value);
     $q.notify({
       type: 'positive',
-      message: 'Account verified successfully! Welcome to MedBook.'
+      message: 'Account verified successfully! Welcome to MedCare.'
     });
     navigateTo('/app');
   } catch (err) {

@@ -9,7 +9,7 @@
             <q-icon name="healing" size="32px" class="text-white" />
           </q-avatar>
           <div class="text-h6 font-weight-bold text-white" style="font-size: 1.4rem; letter-spacing: -0.5px;">
-            MedBook
+            MedCare
           </div>
         </q-btn>
 

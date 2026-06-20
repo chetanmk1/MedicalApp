@@ -13,7 +13,7 @@
         />
 
         <q-toolbar-title class="font-weight-bold">
-          MedBook Admin Portal
+          MedCare Admin Portal
         </q-toolbar-title>
 
         <!-- Stop Impersonating Banner -->
@@ -101,7 +101,7 @@
           <q-avatar size="50px" class="q-mb-xs">
             <q-icon name="healing" size="36px" class="text-primary" />
           </q-avatar>
-          <div class="text-subtitle1 font-weight-bold text-gradient">MedBook Portal</div>
+          <div class="text-subtitle1 font-weight-bold text-gradient">MedCare Portal</div>
           <div class="text-caption text-indigo-7 font-weight-bold">{{ formatRoleName(userRole) }}</div>
         </div>
         <div v-else class="q-pa-sm text-center bg-indigo-1 text-slate-800 q-mb-md">

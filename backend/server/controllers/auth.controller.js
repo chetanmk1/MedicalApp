@@ -363,7 +363,7 @@ export const forgotPassword = async (req, res) => {
     try {
       await sendMail({
         to: user.email,
-        subject: 'MedBook - Password Reset Link',
+        subject: 'MedCare - Password Reset Link',
         html,
       });
 

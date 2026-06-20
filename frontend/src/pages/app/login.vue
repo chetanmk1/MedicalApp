@@ -72,7 +72,7 @@
 
         <q-card-section class="text-center q-pt-none">
           <p class="text-caption text-grey-7">
-            New to MedBook?
+            New to MedCare?
             <router-link to="/app/register" class="text-primary font-weight-bold text-decoration-none">
               Create a Patient Account
             </router-link>

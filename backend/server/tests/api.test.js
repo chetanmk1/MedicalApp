@@ -32,7 +32,7 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-describe('MedBook Refactored Hybrid SaaS API Suite', () => {
+describe('MedCare Refactored Hybrid SaaS API Suite', () => {
   let superAdminToken;
   let clinicId;
   let clinicAdminToken;

@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     ],
     extras: {
       font: null, // We will load a premium Google Font (Outfit) in css/app.css
-      fontIcon: 'material-icons',
+      fontIcons: ['material-icons', 'material-icons-outlined', 'material-icons-round', 'fontawesome-v6'],
     },
     config: {
       dark: true,
@@ -34,7 +34,7 @@ export default defineNuxtConfig({
   ],
   app: {
     head: {
-      title: 'MedBook - Smart Multi-Tenant Clinic Booking',
+      title: 'MedCare - Smart Multi-Tenant Clinic Booking',
       meta: [
         { name: 'description', content: 'A modern, secure SaaS appointment booking portal for small clinics.' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
