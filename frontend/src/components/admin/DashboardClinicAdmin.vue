@@ -233,7 +233,7 @@
                           </div>
                         </div>
                         <div class="col-2">
-                          <q-btn flat color="negative" icon="delete" dense @click="removeWeeklyShift(index)" />
+                          <q-btn flat color="negative" icon="delete" dense @click="promptDeleteWeeklyShift(index)" />
                         </div>
                       </div>
                     </div>
@@ -264,7 +264,7 @@
                           <q-input v-model="holiday.description" outlined dense label="Description / Reason" />
                         </div>
                         <div class="col-2">
-                          <q-btn flat color="negative" icon="delete" dense @click="removeHoliday(index)" />
+                          <q-btn flat color="negative" icon="delete" dense @click="promptDeleteHoliday(index)" />
                         </div>
                       </div>
                     </div>
@@ -306,7 +306,7 @@
                           </q-input>
                         </div>
                         <div class="col-2">
-                          <q-btn flat color="negative" icon="delete" dense @click="removeLeave(index)" />
+                          <q-btn flat color="negative" icon="delete" dense @click="promptDeleteLeave(index)" />
                         </div>
                       </div>
                     </div>
@@ -632,6 +632,66 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="deleteConfirmDialog">
+      <q-card style="width: 450px; border-radius: 12px;">
+        <q-card-section class="bg-negative text-white row items-center">
+          <q-icon name="warning" size="24px" class="q-mr-sm" />
+          <div class="text-h6 font-weight-bold">Confirm Deletion</div>
+        </q-card-section>
+        <q-card-section class="q-pt-md">
+          <div class="text-body1 q-mb-md">{{ deleteConfirmMessage }}</div>
+          
+          <div v-if="deleteConflictCount > 0" class="bg-red-50 text-red-900 q-pa-sm rounded q-mb-sm" style="border: 1px solid #fecaca; border-radius: 8px;">
+            <div class="row items-center font-weight-bold">
+              <q-icon name="error" size="20px" class="q-mr-sm text-negative" />
+              Conflict Warning
+            </div>
+            <div class="q-mt-xs text-caption">
+              There are <strong>{{ deleteConflictCount }} upcoming appointments</strong> booked during this time! Deleting this schedule will <strong>NOT</strong> automatically cancel them. Please cancel or reschedule those appointments manually to avoid double-bookings or patient confusion.
+            </div>
+          </div>
+          <div v-else class="text-positive font-weight-bold row items-center q-mb-sm">
+            <q-icon name="check_circle" size="20px" class="q-mr-sm" />
+            Safe to delete: No conflicting appointments found.
+          </div>
+          
+          <div class="text-caption text-grey-7 q-mt-md">Are you sure you want to remove this schedule entry? You will still need to click "Save Schedule" to apply these changes globally.</div>
+        </q-card-section>
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancel" color="grey-8" v-close-popup />
+          <q-btn unelevated color="negative" label="Yes, Remove It" @click="confirmDeleteEntry" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="saveConfirmDialog">
+      <q-card style="width: 450px; border-radius: 12px;">
+        <q-card-section class="bg-warning text-white row items-center">
+          <q-icon name="warning" size="24px" class="q-mr-sm" />
+          <div class="text-h6 font-weight-bold">Schedule Conflict Warning</div>
+        </q-card-section>
+        <q-card-section class="q-pt-md">
+          <div class="text-body1 q-mb-md">You are about to save changes to the schedule that will invalidate existing appointments.</div>
+          
+          <div class="bg-orange-50 text-orange-900 q-pa-sm rounded q-mb-sm" style="border: 1px solid #fdba74; border-radius: 8px;">
+            <div class="row items-center font-weight-bold">
+              <q-icon name="error" size="20px" class="q-mr-sm text-warning" />
+              {{ saveConflictCount }} Conflicts Detected
+            </div>
+            <div class="q-mt-xs text-caption">
+              The updated schedule excludes <strong>{{ saveConflictCount }} existing appointments</strong>! Saving these changes will <strong>NOT</strong> automatically cancel them. Please cancel or reschedule those appointments manually.
+            </div>
+          </div>
+          
+          <div class="text-caption text-grey-7 q-mt-md">Are you sure you want to proceed and save this new schedule?</div>
+        </q-card-section>
+        <q-card-actions align="right" class="q-pa-md bg-grey-1">
+          <q-btn flat label="Cancel" color="grey-8" v-close-popup />
+          <q-btn unelevated color="warning" text-color="black" label="Yes, Save Anyway" @click="proceedSaveSchedule" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -799,6 +859,11 @@ const fetchStaffUsers = async () => {
     const { $api } = useNuxtApp();
     const data = await $api('/users');
     staffUsers.value = data.users || [];
+    
+    // Automatically show schedule details for the first doctor by default
+    if (doctorsList.value.length > 0 && !selectedDocForSchedule.value) {
+      selectDocSchedule(doctorsList.value[0]);
+    }
   } catch (err) {
     console.error('Fetch users error:', err);
   }
@@ -889,8 +954,34 @@ const addWeeklyShift = () => {
   });
 };
 
-const removeWeeklyShift = (index) => {
-  scheduleForm.value.weeklyAvailability.splice(index, 1);
+const deleteConfirmDialog = ref(false);
+const deleteConfirmMessage = ref('');
+const deleteConflictCount = ref(0);
+const pendingDelete = ref(null);
+
+const promptDeleteWeeklyShift = (index) => {
+  const shift = scheduleForm.value.weeklyAvailability[index];
+  const dayName = daysOfWeekOptions.find(d => d.value === shift.dayOfWeek)?.label || 'Day';
+  
+  const docId = selectedDocForSchedule.value._id;
+  let conflicts = 0;
+  appointments.value.forEach(app => {
+    if (app.doctorId?._id === docId && app.status !== 'cancelled' && app.status !== 'completed') {
+      const datePart = new Date(app.date).toISOString().split('T')[0];
+      const endDateTime = new Date(`${datePart}T${app.endTime || '23:59'}:00`);
+      if (endDateTime < new Date()) return;
+      
+      const appDate = new Date(app.date);
+      if (appDate.getDay() === shift.dayOfWeek) {
+        conflicts++;
+      }
+    }
+  });
+
+  deleteConflictCount.value = conflicts;
+  deleteConfirmMessage.value = `You are about to delete the weekly shift for ${dayName}.`;
+  pendingDelete.value = { type: 'shift', index };
+  deleteConfirmDialog.value = true;
 };
 
 const addHoliday = () => {
@@ -900,8 +991,27 @@ const addHoliday = () => {
   });
 };
 
-const removeHoliday = (index) => {
-  scheduleForm.value.holidays.splice(index, 1);
+const promptDeleteHoliday = (index) => {
+  const holiday = scheduleForm.value.holidays[index];
+  
+  const docId = selectedDocForSchedule.value._id;
+  let conflicts = 0;
+  appointments.value.forEach(app => {
+    if (app.doctorId?._id === docId && app.status !== 'cancelled' && app.status !== 'completed') {
+      const datePart = new Date(app.date).toISOString().split('T')[0];
+      const endDateTime = new Date(`${datePart}T${app.endTime || '23:59'}:00`);
+      if (endDateTime < new Date()) return;
+      
+      if (datePart === holiday.date) {
+        conflicts++;
+      }
+    }
+  });
+
+  deleteConflictCount.value = conflicts;
+  deleteConfirmMessage.value = `You are about to delete the holiday on ${holiday.date}.`;
+  pendingDelete.value = { type: 'holiday', index };
+  deleteConfirmDialog.value = true;
 };
 
 const addLeave = () => {
@@ -912,13 +1022,98 @@ const addLeave = () => {
   });
 };
 
-const removeLeave = (index) => {
-  scheduleForm.value.leaves.splice(index, 1);
+const promptDeleteLeave = (index) => {
+  const leave = scheduleForm.value.leaves[index];
+  
+  const docId = selectedDocForSchedule.value._id;
+  let conflicts = 0;
+  const start = new Date(leave.startDate);
+  start.setHours(0,0,0,0);
+  const end = new Date(leave.endDate);
+  end.setHours(23,59,59,999);
+  
+  appointments.value.forEach(app => {
+    if (app.doctorId?._id === docId && app.status !== 'cancelled' && app.status !== 'completed') {
+      const datePart = new Date(app.date).toISOString().split('T')[0];
+      const endDateTime = new Date(`${datePart}T${app.endTime || '23:59'}:00`);
+      if (endDateTime < new Date()) return;
+      
+      const appDate = new Date(app.date);
+      if (appDate >= start && appDate <= end) {
+        conflicts++;
+      }
+    }
+  });
+
+  deleteConflictCount.value = conflicts;
+  deleteConfirmMessage.value = `You are about to delete the leave blocking from ${leave.startDate} to ${leave.endDate}.`;
+  pendingDelete.value = { type: 'leave', index };
+  deleteConfirmDialog.value = true;
 };
 
-const handleSaveSchedule = async () => {
+const confirmDeleteEntry = () => {
+  if (!pendingDelete.value) return;
+  const { type, index } = pendingDelete.value;
+  if (type === 'shift') {
+    scheduleForm.value.weeklyAvailability.splice(index, 1);
+  } else if (type === 'holiday') {
+    scheduleForm.value.holidays.splice(index, 1);
+  } else if (type === 'leave') {
+    scheduleForm.value.leaves.splice(index, 1);
+  }
+  deleteConfirmDialog.value = false;
+  pendingDelete.value = null;
+};
+
+const saveConfirmDialog = ref(false);
+const saveConflictCount = ref(0);
+
+const handleSaveSchedule = () => {
+  if (!selectedDocForSchedule.value) return;
+  const docId = selectedDocForSchedule.value._id;
+  let conflicts = 0;
+  appointments.value.forEach(app => {
+    if (app.doctorId?._id === docId && app.status !== 'cancelled' && app.status !== 'completed') {
+      const datePart = new Date(app.date).toISOString().split('T')[0];
+      const endDateTime = new Date(`${datePart}T${app.endTime || '23:59'}:00`);
+      if (endDateTime < new Date()) return;
+      
+      const appDate = new Date(app.date);
+      const dayOfWeek = appDate.getDay();
+      
+      const isHoliday = scheduleForm.value.holidays.some(h => h.date === datePart);
+      if (isHoliday) { conflicts++; return; }
+      
+      const isLeave = scheduleForm.value.leaves.some(l => {
+        const start = new Date(l.startDate); start.setHours(0,0,0,0);
+        const end = new Date(l.endDate); end.setHours(23,59,59,999);
+        return appDate >= start && appDate <= end;
+      });
+      if (isLeave) { conflicts++; return; }
+      
+      const shift = scheduleForm.value.weeklyAvailability.find(s => s.dayOfWeek === dayOfWeek);
+      if (!shift) { conflicts++; return; }
+      
+      const fitsInSlot = shift.slots.some(slot => {
+        return app.startTime >= slot.startTime && app.endTime <= slot.endTime;
+      });
+      
+      if (!fitsInSlot) { conflicts++; return; }
+    }
+  });
+
+  if (conflicts > 0) {
+    saveConflictCount.value = conflicts;
+    saveConfirmDialog.value = true;
+  } else {
+    proceedSaveSchedule();
+  }
+};
+
+const proceedSaveSchedule = async () => {
   if (!selectedDocForSchedule.value) return;
   savingSchedule.value = true;
+  saveConfirmDialog.value = false;
   try {
     await saveSchedule(selectedDocForSchedule.value._id, scheduleForm.value);
     $q.notify({
