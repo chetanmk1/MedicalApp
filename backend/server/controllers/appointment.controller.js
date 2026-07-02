@@ -3,7 +3,7 @@ import Schedule from '../models/Schedule.js';
 import User from '../models/User.js';
 import Clinic from '../models/Clinic.js';
 import { sendBookingNotification } from '../utils/mailer.js';
-
+import { sendNotification } from '../utils/notify.js';
 // Helper to add minutes
 const addMinutes = (timeStr, minsToAdd) => {
   const [hours, mins] = timeStr.split(':').map(Number);
@@ -158,6 +158,30 @@ export const createAppointment = async (req, res) => {
 
     if (patientUser && doctorUser && clinic) {
       await sendBookingNotification(appointment, patientUser, doctorUser, clinic, 'created');
+      
+      // Notify clinic staff about new booking
+      await sendNotification({
+        clinicId: targetClinicId,
+        title: 'New Appointment Booked',
+        message: `Patient ${patientUser.name} booked an appointment with Dr. ${doctorUser.name} on ${date} at ${startTime}.`,
+        type: 'success'
+      });
+
+      // Notify the Doctor specifically
+      await sendNotification({
+        userId: doctorUser._id,
+        title: 'New Appointment Received',
+        message: `Patient ${patientUser.name} booked an appointment on ${new Date(date).toLocaleDateString()} at ${startTime}.`,
+        type: 'info'
+      });
+
+      // Notify the Patient specifically
+      await sendNotification({
+        userId: patientUser._id,
+        title: 'Appointment Confirmed',
+        message: `Your appointment with Dr. ${doctorUser.name} on ${new Date(date).toLocaleDateString()} at ${startTime} is confirmed.`,
+        type: 'success'
+      });
     }
 
     res.status(201).json({ message: 'Appointment booked successfully', appointment });
@@ -258,6 +282,30 @@ export const cancelAppointment = async (req, res) => {
 
     if (patientUser && doctorUser && clinic) {
       await sendBookingNotification(app, patientUser, doctorUser, clinic, 'cancelled');
+      
+      // Notify clinic staff about cancellation
+      await sendNotification({
+        clinicId: app.clinicId,
+        title: 'Appointment Cancelled',
+        message: `Appointment for Patient ${patientUser.name} with Dr. ${doctorUser.name} on ${new Date(app.date).toLocaleDateString()} at ${app.startTime} was cancelled.`,
+        type: 'warning'
+      });
+
+      // Notify the Doctor
+      await sendNotification({
+        userId: doctorUser._id,
+        title: 'Appointment Cancelled',
+        message: `Your appointment with ${patientUser.name} on ${new Date(app.date).toLocaleDateString()} at ${app.startTime} was cancelled.`,
+        type: 'warning'
+      });
+
+      // Notify the Patient
+      await sendNotification({
+        userId: patientUser._id,
+        title: 'Appointment Cancelled',
+        message: `Your appointment with Dr. ${doctorUser.name} on ${new Date(app.date).toLocaleDateString()} at ${app.startTime} was cancelled.`,
+        type: 'warning'
+      });
     }
 
     res.json({ message: 'Appointment cancelled successfully', appointment: app });
@@ -320,6 +368,30 @@ export const rescheduleAppointment = async (req, res) => {
 
     if (patientUser && doctorUser && clinic) {
       await sendBookingNotification(app, patientUser, doctorUser, clinic, 'rescheduled');
+      
+      // Notify clinic staff
+      await sendNotification({
+        clinicId: app.clinicId,
+        title: 'Appointment Rescheduled',
+        message: `Appointment for ${patientUser.name} with Dr. ${doctorUser.name} rescheduled to ${new Date(app.date).toLocaleDateString()} at ${app.startTime}.`,
+        type: 'info'
+      });
+
+      // Notify the Doctor
+      await sendNotification({
+        userId: doctorUser._id,
+        title: 'Appointment Rescheduled',
+        message: `Your appointment with ${patientUser.name} was rescheduled to ${new Date(app.date).toLocaleDateString()} at ${app.startTime}.`,
+        type: 'info'
+      });
+
+      // Notify the Patient
+      await sendNotification({
+        userId: patientUser._id,
+        title: 'Appointment Rescheduled',
+        message: `Your appointment with Dr. ${doctorUser.name} was rescheduled to ${new Date(app.date).toLocaleDateString()} at ${app.startTime}.`,
+        type: 'info'
+      });
     }
 
     res.json({ message: 'Appointment rescheduled successfully', appointment: app });
@@ -349,6 +421,18 @@ export const checkInAppointment = async (req, res) => {
 
     app.status = 'checked_in';
     await app.save();
+
+    // Populate patient info for notification
+    const patientUser = await User.findById(app.patientId);
+    
+    // Notify the doctor specifically
+    await sendNotification({
+      userId: app.doctorId, // specifically for doctor
+      clinicId: app.clinicId, // and clinic staff
+      title: 'Patient Checked In',
+      message: `Patient ${patientUser ? patientUser.name : 'Unknown'} has checked in for their ${app.startTime} appointment.`,
+      type: 'info'
+    });
 
     res.json({ message: 'Patient checked in successfully', appointment: app });
   } catch (error) {

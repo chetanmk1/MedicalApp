@@ -8,11 +8,16 @@ dotenv.config();
 // Establish Database Connection
 connectDB();
 
+import { initSocket } from './socket.js';
+
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   console.log(`Server listening in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
+
+// Initialize Socket.io
+initSocket(server);
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

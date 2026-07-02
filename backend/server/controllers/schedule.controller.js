@@ -1,6 +1,7 @@
 import Schedule from '../models/Schedule.js';
 import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
+import { sendNotification } from '../utils/notify.js';
 
 // Helper to add minutes to HH:MM string
 const addMinutes = (timeStr, minsToAdd) => {
@@ -81,6 +82,21 @@ export const updateDoctorSchedule = async (req, res) => {
         weeklyAvailability: weeklyAvailability || [],
         leaves: leaves || [],
         holidays: holidays || [],
+      });
+    }
+
+    // Optional: Notify all patients of this clinic about schedule changes (e.g. new holidays)
+    // To avoid spamming all users in the system, we find patients who have booked with this clinic before.
+    if (holidays && holidays.length > 0) {
+      const distinctPatients = await Appointment.distinct('patientId', { clinicId: doctor.clinicId });
+      // We can notify them asynchronously
+      distinctPatients.forEach(async (patientId) => {
+        await sendNotification({
+          userId: patientId,
+          title: 'Clinic Schedule Update',
+          message: `Dr. ${doctor.name}'s clinic has updated its schedule or added new holidays. Please check availability if you plan to visit.`,
+          type: 'info'
+        });
       });
     }
 

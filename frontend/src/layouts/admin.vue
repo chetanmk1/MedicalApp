@@ -28,6 +28,12 @@
         <div class="row items-center q-gutter-md">
           <!-- Dark Mode Toggle -->
           <q-btn flat round dense color="white" :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="$q.dark.toggle()" :title="$q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode'" />
+          
+          <!-- Notification Bell -->
+          <q-btn flat round dense color="white" icon="notifications" @click="rightDrawerOpen = !rightDrawerOpen">
+            <q-badge v-if="unreadCount > 0" color="red" floating>{{ unreadCount }}</q-badge>
+          </q-btn>
+
           <!-- Role Switcher -->
           <q-btn-dropdown
             v-if="user?.roles && user.roles.length > 1"
@@ -208,6 +214,50 @@
       </q-scroll-area>
     </q-drawer>
 
+    <!-- Notification Drawer (Right) -->
+    <q-drawer
+      v-model="rightDrawerOpen"
+      side="right"
+      bordered
+      :width="350"
+      class="bg-white"
+    >
+      <div class="row items-center justify-between q-pa-md bg-indigo-1">
+        <div class="text-subtitle1 font-weight-bold text-primary">Notifications</div>
+        <q-btn flat dense round icon="done_all" color="primary" @click="markAllAsRead" title="Mark all as read" />
+      </div>
+      <q-separator />
+      <q-scroll-area style="height: calc(100% - 60px);">
+        <q-list separator>
+          <q-item v-if="notifications.length === 0" class="text-center q-pa-lg text-grey">
+            No notifications yet.
+          </q-item>
+          <q-item
+            v-for="notif in notifications"
+            :key="notif._id"
+            clickable
+            @click="markAsRead(notif._id)"
+            :class="{ 'bg-blue-50': !notif.isRead }"
+            class="q-py-md"
+          >
+            <q-item-section avatar>
+              <q-icon :name="getNotifIcon(notif.type)" :color="getNotifColor(notif.type)" size="md" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="font-weight-bold" :class="{'text-black': !notif.isRead, 'text-grey-8': notif.isRead}">
+                {{ notif.title }}
+              </q-item-label>
+              <q-item-label caption lines="2">{{ notif.message }}</q-item-label>
+              <q-item-label caption class="q-mt-xs text-grey-5">{{ new Date(notif.createdAt).toLocaleString() }}</q-item-label>
+            </q-item-section>
+            <q-item-section side v-if="!notif.isRead">
+              <q-badge rounded color="primary" />
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-scroll-area>
+    </q-drawer>
+
     <!-- Page Container -->
     <q-page-container>
       <q-page class="q-pa-lg">
@@ -225,15 +275,42 @@ import { useQuasar } from 'quasar';
 import { useDashboardTab } from '~/composables/useDashboardTab';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '~/stores/auth';
+import { useNotifications } from '~/composables/useNotifications';
 
 const $q = useQuasar();
 const route = useRoute();
 const { user, userRole, logout, allowedRoles, isImpersonating, stopImpersonating } = useAuth();
 const { canSwitchTo, performSwitch } = useRoleSwitching();
 const { activeTab } = useDashboardTab();
+const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotifications();
 
 const leftDrawerOpen = ref(false);
+const rightDrawerOpen = ref(false);
 const miniState = ref(false);
+
+onMounted(() => {
+  if (user.value) {
+    fetchNotifications();
+  }
+});
+
+const getNotifIcon = (type) => {
+  switch(type) {
+    case 'success': return 'check_circle';
+    case 'warning': return 'warning';
+    case 'error': return 'error';
+    default: return 'info';
+  }
+};
+
+const getNotifColor = (type) => {
+  switch(type) {
+    case 'success': return 'positive';
+    case 'warning': return 'warning';
+    case 'error': return 'negative';
+    default: return 'primary';
+  }
+};
 
 const toggleLeftDrawer = () => {
   if ($q.screen.gt.sm) {
