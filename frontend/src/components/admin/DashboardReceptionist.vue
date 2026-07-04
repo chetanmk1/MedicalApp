@@ -436,7 +436,18 @@
               </q-date>
             </q-popup-proxy>
           </q-input>
-          <q-input v-model="rescheduleForm.startTime" outlined dense label="New Start Time (HH:MM)" />
+          <q-input :model-value="formatTime(rescheduleForm.startTime)" outlined dense label="New Start Time" readonly class="cursor-pointer">
+            <template v-slot:append>
+              <q-icon name="access_time" class="cursor-pointer" />
+            </template>
+            <q-popup-proxy transition-show="scale" transition-hide="scale">
+              <q-time v-model="rescheduleForm.startTime" mask="HH:mm" :format24h="false">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-time>
+            </q-popup-proxy>
+          </q-input>
           </q-card-section>
 
           <q-card-actions align="right" class="q-pa-md bg-grey-1">
