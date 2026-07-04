@@ -11,8 +11,8 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
       unique: true,
+      sparse: true,
       trim: true,
       lowercase: true,
     },
@@ -51,6 +51,18 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: [true, 'Phone number is required'],
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+    age: {
+      type: Number,
+      min: 0,
+      max: 150,
+    },
+    gender: {
+      type: String,
+      enum: ['Male', 'Female', 'Other', 'Prefer not to say'],
     },
     status: {
       type: String,

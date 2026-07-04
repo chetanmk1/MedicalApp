@@ -26,12 +26,25 @@ const generateRefreshToken = (userId) => {
 // @access  Public
 export const registerPatient = async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body;
+    let { name, email, password, phone, age, gender } = req.body;
+    
+    if (email === '') email = undefined;
+
+    if (!phone && !email) {
+      return res.status(400).json({ message: 'Please provide either an email or a phone number' });
+    }
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    let userExists = null;
+    if (email) {
+      userExists = await User.findOne({ email });
+    }
+    if (!userExists && phone) {
+      userExists = await User.findOne({ phone });
+    }
+    
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      return res.status(400).json({ message: 'User already exists with this email or phone number' });
     }
 
     // Generate mock OTP
@@ -44,6 +57,8 @@ export const registerPatient = async (req, res) => {
       email,
       password,
       phone,
+      age,
+      gender,
       role: 'patient',
       status: 'pending_otp',
       otp: {
@@ -52,11 +67,11 @@ export const registerPatient = async (req, res) => {
       }
     });
 
-    console.log(`[OTP DEBUG] Generated OTP for ${email}: ${otpCode}`);
+    console.log(`[OTP DEBUG] Generated OTP for ${email || phone}: ${otpCode}`);
 
     res.status(201).json({
       message: 'Registration successful. Please verify OTP.',
-      email: user.email,
+      identifier: user.email || user.phone,
       status: user.status
     });
   } catch (error) {
@@ -70,22 +85,24 @@ export const registerPatient = async (req, res) => {
 // @access  Public
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // 'email' from frontend could be email or phone
 
     // Validate request
     if (!email || !password) {
-      return res.status(400).json({ message: 'Please provide email and password' });
+      return res.status(400).json({ message: 'Please provide email/phone and password' });
     }
 
     // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({
+      $or: [{ email: email }, { phone: email }]
+    }).select('+password');
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Check status
     if (user.status === 'pending_otp') {
-      return res.status(403).json({ message: 'Please verify your account OTP first.', status: 'pending_otp', email: user.email });
+      return res.status(403).json({ message: 'Please verify your account OTP first.', status: 'pending_otp', identifier: user.email || user.phone });
     }
 
     if (user.status === 'inactive' || user.status === 'suspended') {
@@ -346,7 +363,7 @@ export const forgotPassword = async (req, res) => {
     try {
       await sendMail({
         to: user.email,
-        subject: 'MedBook - Password Reset Link',
+        subject: 'MedCare - Password Reset Link',
         html,
       });
 
@@ -415,15 +432,20 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const { name, email, phone, specialization } = req.body;
+    const { name, email, phone, specialization, age, gender } = req.body;
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
+    if (age !== undefined) user.age = age;
+    if (gender) user.gender = gender;
+    
     if (user.role === 'doctor' && specialization) {
       user.specialization = specialization;
     }
 
-    if (email && email !== user.email) {
+    if (email === '') {
+      user.email = undefined;
+    } else if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
         return res.status(400).json({ message: 'Email is already taken by another user' });
@@ -443,7 +465,9 @@ export const updateProfile = async (req, res) => {
         clinicId: user.clinicId,
         specialization: user.specialization,
         phone: user.phone,
-        status: user.status
+        status: user.status,
+        age: user.age,
+        gender: user.gender
       }
     });
   } catch (error) {
@@ -489,13 +513,15 @@ export const updatePassword = async (req, res) => {
 // @access  Public
 export const verifyOtp = async (req, res) => {
   try {
-    const { email, otpCode } = req.body;
+    const { email, otpCode } = req.body; // 'email' could be phone
 
     if (!email || !otpCode) {
-      return res.status(400).json({ message: 'Email and OTP code are required' });
+      return res.status(400).json({ message: 'Identifier and OTP code are required' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      $or: [{ email: email }, { phone: email }]
+    });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });

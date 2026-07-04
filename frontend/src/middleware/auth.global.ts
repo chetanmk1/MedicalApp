@@ -4,9 +4,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const authStore = useAuthStore();
   const { $api } = useNuxtApp();
 
-  // 1. Recover token on client-side reload
-  if (import.meta.client && !authStore.token) {
-    const savedToken = localStorage.getItem('med_token');
+  // 1. Recover token on SSR and client-side reload using cookies
+  if (!authStore.token) {
+    const savedToken = useCookie('med_token').value;
     if (savedToken) {
       authStore.token = savedToken;
       try {

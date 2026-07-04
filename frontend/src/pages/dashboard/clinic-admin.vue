@@ -29,7 +29,7 @@
       <q-tab-panels v-model="tab" animated>
         <!-- Clinic Profile Panel -->
         <q-tab-panel name="profile" class="q-gutter-y-lg">
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Manage Clinic Info</div>
               <q-form @submit.prevent="updateProfile" class="row q-col-gutter-sm" v-if="clinicInfo">
@@ -62,7 +62,7 @@
         <!-- Doctors & Staff Accounts Panel -->
         <q-tab-panel name="users" class="q-gutter-y-lg">
           <!-- Create Account Form -->
-          <q-card flat bordered style="border-radius: 12px; background: #f8fafc;">
+          <q-card flat bordered class="bg-grey-1" style="border-radius: 12px;">
             <q-card-section>
               <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Add Doctor or Staff Account</div>
               <q-form @submit.prevent="submitUser" class="row q-col-gutter-sm">
@@ -213,10 +213,32 @@
                         <div class="col-3" v-for="(slot, slotIndex) in shift.slots" :key="slotIndex">
                           <div class="row q-col-gutter-xs">
                             <div class="col-6">
-                              <q-input v-model="slot.startTime" outlined dense label="Start" placeholder="HH:MM" />
+                              <q-input :model-value="formatTime(slot.startTime)" outlined dense label="Start" readonly class="cursor-pointer">
+                                <template v-slot:append>
+                                  <q-icon name="access_time" class="cursor-pointer" />
+                                </template>
+                                <q-popup-proxy transition-show="scale" transition-hide="scale">
+                                  <q-time v-model="slot.startTime" mask="HH:mm" :format24h="false">
+                                    <div class="row items-center justify-end">
+                                      <q-btn v-close-popup label="Close" color="primary" flat />
+                                    </div>
+                                  </q-time>
+                                </q-popup-proxy>
+                              </q-input>
                             </div>
                             <div class="col-6">
-                              <q-input v-model="slot.endTime" outlined dense label="End" placeholder="HH:MM" />
+                              <q-input :model-value="formatTime(slot.endTime)" outlined dense label="End" readonly class="cursor-pointer">
+                                <template v-slot:append>
+                                  <q-icon name="access_time" class="cursor-pointer" />
+                                </template>
+                                <q-popup-proxy transition-show="scale" transition-hide="scale">
+                                  <q-time v-model="slot.endTime" mask="HH:mm" :format24h="false">
+                                    <div class="row items-center justify-end">
+                                      <q-btn v-close-popup label="Close" color="primary" flat />
+                                    </div>
+                                  </q-time>
+                                </q-popup-proxy>
+                              </q-input>
                             </div>
                           </div>
                         </div>
@@ -301,7 +323,7 @@
                 <q-item-label caption class="q-mt-xs">
                   <span><strong>Doctor:</strong> Dr. {{ app.doctorId?.name }} ({{ app.doctorId?.specialization }})</span>
                   <br />
-                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ app.startTime }} - {{ app.endTime }}</span>
+                  <span><strong>Slot:</strong> {{ formatDate(app.date) }} at {{ formatTime(app.startTime) }} - {{ formatTime(app.endTime) }}</span>
                   <br v-if="app.notes" />
                   <span v-if="app.notes"><strong>Reason:</strong> {{ app.notes }}</span>
                 </q-item-label>
@@ -328,7 +350,18 @@
 
         <q-card-section class="q-gutter-y-md q-pt-md">
           <q-input v-model="rescheduleForm.date" type="date" outlined dense label="New Date" />
-          <q-input v-model="rescheduleForm.startTime" outlined dense label="New Start Time (HH:MM)" />
+          <q-input :model-value="formatTime(rescheduleForm.startTime)" outlined dense label="New Start Time" readonly class="cursor-pointer">
+            <template v-slot:append>
+              <q-icon name="access_time" class="cursor-pointer" />
+            </template>
+            <q-popup-proxy transition-show="scale" transition-hide="scale">
+              <q-time v-model="rescheduleForm.startTime" mask="HH:mm" :format24h="false">
+                <div class="row items-center justify-end">
+                  <q-btn v-close-popup label="Close" color="primary" flat />
+                </div>
+              </q-time>
+            </q-popup-proxy>
+          </q-input>
         </q-card-section>
 
         <q-card-actions align="right" class="q-pb-md q-px-md">
@@ -344,6 +377,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { useQuasar } from 'quasar';
+import { useFormat } from '~/composables/useFormat';
 
 definePageMeta({
   role: 'clinic_admin'
@@ -352,6 +386,7 @@ definePageMeta({
 const $q = useQuasar();
 const authStore = useAuthStore();
 const { $api } = useNuxtApp();
+const { formatDate, formatTime } = useFormat();
 
 const tab = ref('profile');
 const clinicInfo = ref(null);
@@ -639,9 +674,7 @@ const submitReschedule = async () => {
   }
 };
 
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toDateString();
-};
+
 
 const getAppStatusColor = (status) => {
   switch (status) {

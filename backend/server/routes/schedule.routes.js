@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.route('/doctor/:doctorId')
   .get(getDoctorSchedule)
-  .put(protect, authorizeRoles('clinic_admin', 'doctor'), updateDoctorSchedule);
+  .put(protect, authorizeRoles('clinic_admin', 'doctor', 'super_admin'), updateDoctorSchedule);
 
 router.route('/doctor/:doctorId/slots')
   .get(getAvailableSlots);

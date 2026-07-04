@@ -140,7 +140,7 @@
         <div class="row q-col-gutter-lg">
           <!-- Register Clinic -->
           <div class="col-12 col-md-6">
-            <q-card flat bordered style="border-radius: 12px; background: #f8fafc; height: 100%;">
+            <q-card flat bordered class="bg-grey-1" style="border-radius: 12px; height: 100%;">
               <q-card-section>
                 <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Onboard New Clinic</div>
                 <q-form @submit.prevent="submitClinic" class="row q-col-gutter-sm">
@@ -172,7 +172,7 @@
 
           <!-- Create Admin Form -->
           <div class="col-12 col-md-6">
-            <q-card flat bordered style="border-radius: 12px; background: #f8fafc; height: 100%;">
+            <q-card flat bordered class="bg-grey-1" style="border-radius: 12px; height: 100%;">
               <q-card-section>
                 <div class="text-subtitle1 font-weight-bold text-slate-800 q-mb-md">Create Clinic Admin Account</div>
                 <q-form @submit.prevent="submitAdmin" class="row q-col-gutter-sm">
@@ -273,7 +273,7 @@
         <div class="row q-col-gutter-lg">
           <!-- Maintenance mode card -->
           <div class="col-12 col-md-6">
-            <q-card flat bordered class="q-pa-md" style="border-radius: 12px; background: #fffdf5; border-color: #fef08a;">
+            <q-card flat bordered class="q-pa-md bg-amber-1" style="border-radius: 12px; border-color: #fef08a;">
               <div class="row items-center justify-between">
                 <div class="row items-center">
                   <q-icon name="warning" color="amber-8" size="32px" class="q-mr-md" />
@@ -297,7 +297,7 @@
 
           <!-- Subscription module -->
           <div class="col-12">
-            <q-card flat bordered style="border-radius: 16px; border-style: dashed; background: #fafafa;">
+            <q-card flat bordered class="bg-grey-1" style="border-radius: 16px; border-style: dashed;">
               <q-card-section class="text-center q-py-xl text-grey-6">
                 <q-icon name="subscriptions" size="48px" class="q-mb-sm" />
                 <div class="text-subtitle1 font-weight-bold text-slate-800">SaaS Subscriptions & Billing Module</div>
@@ -462,14 +462,21 @@ const changeStatus = async (id, status) => {
   }
 };
 
-const handleImpersonate = async (clinic) => {
-  try {
-    $q.loading.show({ message: `Accessing clinic admin context...` });
-    const { $api } = useNuxtApp();
-    const userData = await $api('/users', {
-      params: { clinicId: clinic._id }
-    });
-    const clinicAdminUser = (userData.users || []).find(u => u.role === 'clinic_admin');
+const handleImpersonate = (clinic) => {
+  $q.dialog({
+    title: 'Confirm Impersonation',
+    message: `Are you sure you want to impersonate the administrator of ${clinic.name}? Your dashboard will switch to their view.`,
+    cancel: true,
+    persistent: true,
+    color: 'primary'
+  }).onOk(async () => {
+    try {
+      $q.loading.show({ message: `Accessing clinic admin context...` });
+      const { $api } = useNuxtApp();
+      const userData = await $api('/users', {
+        params: { clinicId: clinic._id }
+      });
+      const clinicAdminUser = (userData.users || []).find(u => u.role === 'clinic_admin');
     if (!clinicAdminUser) {
       $q.notify({
         type: 'warning',
@@ -478,15 +485,7 @@ const handleImpersonate = async (clinic) => {
       return;
     }
 
-    const originalToken = token.value;
-    const originalUser = user.value;
-
-    const data = await impersonate(clinicAdminUser._id);
-    
-    if (import.meta.client) {
-      sessionStorage.setItem('med_admin_original_token', originalToken);
-      sessionStorage.setItem('med_admin_original_user', JSON.stringify(originalUser));
-    }
+    await impersonate(clinicAdminUser._id);
 
     $q.notify({
       type: 'positive',
@@ -495,13 +494,14 @@ const handleImpersonate = async (clinic) => {
 
     navigateTo('/admin/dashboard');
   } catch (err) {
-    $q.notify({
-      type: 'negative',
-      message: err.message || 'Impersonation failed'
-    });
-  } finally {
-    $q.loading.hide();
-  }
+      $q.notify({
+        type: 'negative',
+        message: err.message || 'Impersonation failed'
+      });
+    } finally {
+      $q.loading.hide();
+    }
+  });
 };
 
 const submitClinic = async () => {

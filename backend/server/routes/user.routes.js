@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.route('/')
   .post(protect, authorizeRoles('super_admin', 'clinic_admin'), enforceTenant, createUser)
-  .get(protect, authorizeRoles('clinic_admin', 'receptionist'), enforceTenant, getClinicUsers);
+  .get(protect, authorizeRoles('super_admin', 'clinic_admin', 'receptionist'), enforceTenant, getClinicUsers);
 
 router.route('/doctors')
   .get(getDoctors);

@@ -31,10 +31,10 @@
                   v-model="profileForm.name"
                   outlined
                   dense
-                  label="Full Name"
+                  label="Full Name *"
                   required
                   lazy-rules
-                  :rules="[ val => val && val.length > 0 || 'Name is required' ]"
+                  :rules="[ val => val && val.trim().length > 0 || 'Name is required' ]"
                 />
 
                 <q-input
@@ -42,11 +42,10 @@
                   outlined
                   dense
                   type="email"
-                  label="Email Address"
-                  required
+                  label="Email Address (Optional)"
                   lazy-rules
                   :rules="[ 
-                    val => val && val.length > 0 || 'Email is required',
+                    val => !val || val.trim().length > 0 || 'Please enter a valid email',
                     val => isValidEmail(val) || 'Invalid email format'
                   ]"
                 />
@@ -55,11 +54,33 @@
                   v-model="profileForm.phone"
                   outlined
                   dense
-                  label="Phone Number"
+                  label="Phone Number *"
                   required
                   lazy-rules
-                  :rules="[ val => val && val.length > 0 || 'Phone number is required' ]"
+                  :rules="[ val => val && val.trim().length > 0 || 'Phone number is required' ]"
                 />
+
+                <div class="row q-col-gutter-md">
+                  <div class="col-6">
+                    <q-input
+                      v-model.number="profileForm.age"
+                      outlined
+                      dense
+                      type="number"
+                      label="Age (Optional)"
+                      :rules="[ val => !val || (val > 0 && val <= 150) || 'Age must be between 1 and 150' ]"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <q-select
+                      v-model="profileForm.gender"
+                      :options="['Male', 'Female', 'Other', 'Prefer not to say']"
+                      outlined
+                      dense
+                      label="Gender (Optional)"
+                    />
+                  </div>
+                </div>
 
                 <q-input
                   v-if="authStore.isDoctor"
@@ -107,7 +128,7 @@
                   outlined
                   dense
                   :type="showCurrent ? 'text' : 'password'"
-                  label="Current Password"
+                  label="Current Password *"
                   required
                   lazy-rules
                   :rules="[ val => val && val.length > 0 || 'Current password is required' ]"
@@ -126,7 +147,7 @@
                   outlined
                   dense
                   :type="showNew ? 'text' : 'password'"
-                  label="New Password"
+                  label="New Password *"
                   required
                   lazy-rules
                   :rules="[ val => val && val.length >= 6 || 'New password must be at least 6 characters' ]"
@@ -145,7 +166,7 @@
                   outlined
                   dense
                   :type="showConfirm ? 'text' : 'password'"
-                  label="Confirm New Password"
+                  label="Confirm New Password *"
                   required
                   lazy-rules
                   :rules="[ 
@@ -209,7 +230,9 @@ const profileForm = ref({
   name: '',
   email: '',
   phone: '',
-  specialization: ''
+  specialization: '',
+  age: '',
+  gender: ''
 });
 
 const passwordForm = ref({
@@ -224,10 +247,13 @@ onMounted(() => {
     profileForm.value.email = authStore.user.email || '';
     profileForm.value.phone = authStore.user.phone || '';
     profileForm.value.specialization = authStore.user.specialization || '';
+    profileForm.value.age = authStore.user.age || '';
+    profileForm.value.gender = authStore.user.gender || '';
   }
 });
 
 const isValidEmail = (val) => {
+  if (!val) return true;
   const pattern = /^(?=[A-Za-z0-9@._%+-]{6,254}$)[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/;
   return pattern.test(val);
 };
@@ -241,7 +267,9 @@ const handleUpdateProfile = async () => {
         name: profileForm.value.name,
         email: profileForm.value.email,
         phone: profileForm.value.phone,
-        specialization: profileForm.value.specialization
+        specialization: profileForm.value.specialization,
+        age: profileForm.value.age,
+        gender: profileForm.value.gender
       }
     });
 

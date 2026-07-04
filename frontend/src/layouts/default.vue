@@ -9,7 +9,7 @@
             <q-icon name="healing" size="32px" class="text-white" />
           </q-avatar>
           <div class="text-h6 font-weight-bold text-white" style="font-size: 1.4rem; letter-spacing: -0.5px;">
-            MedBook
+            MedCare
           </div>
         </q-btn>
 
@@ -17,6 +17,14 @@
 
         <!-- Navigation Links -->
         <div class="gt-xs row q-gutter-md items-center">
+          <!-- Dark Mode Toggle -->
+          <q-btn flat round dense color="white" :icon="$q.dark.isActive ? 'light_mode' : 'dark_mode'" @click="$q.dark.toggle()" :title="$q.dark.isActive ? 'Switch to Light Mode' : 'Switch to Dark Mode'" />
+
+          <!-- Notification Bell -->
+          <q-btn v-if="authStore.isLoggedIn" flat round dense color="white" icon="notifications" @click="rightDrawerOpen = !rightDrawerOpen">
+            <q-badge v-if="unreadCount > 0" color="red" floating>{{ unreadCount }}</q-badge>
+          </q-btn>
+
           <q-btn flat no-caps color="white" label="Find Clinic" to="/" />
           
           <template v-if="authStore.isLoggedIn">
@@ -50,7 +58,7 @@
           
           <template v-else>
             <q-btn flat no-caps color="white" label="Login" to="/app/login" />
-            <q-btn unelevated no-caps color="white" text-color="teal-9" label="Sign Up" to="/app/register" class="q-px-md font-weight-bold" style="border-radius: 8px;" />
+            <q-btn unelevated no-caps :color="$q.dark.isActive ? 'primary' : 'white'" :text-color="$q.dark.isActive ? 'white' : 'teal-9'" label="Sign Up" to="/app/register" class="q-px-md font-weight-bold" style="border-radius: 8px;" />
           </template>
         </div>
 
@@ -129,7 +137,62 @@
             <q-item-section>Sign Up</q-item-section>
           </q-item>
         </template>
+        
+        <q-separator />
+
+        <!-- Dark Mode Toggle (Mobile) -->
+        <q-item clickable v-close-popup @click="$q.dark.toggle()">
+          <q-item-section avatar>
+            <q-icon :name="$q.dark.isActive ? 'light_mode' : 'dark_mode'" />
+          </q-item-section>
+          <q-item-section class="font-weight-medium">Toggle Theme</q-item-section>
+        </q-item>
+
       </q-list>
+    </q-drawer>
+
+    <!-- Notification Drawer (Right) -->
+    <q-drawer
+      v-model="rightDrawerOpen"
+      side="right"
+      bordered
+      :width="350"
+      class="bg-white"
+    >
+      <div class="row items-center justify-between q-pa-md bg-emerald-1">
+        <div class="text-subtitle1 font-weight-bold text-teal-9">Notifications</div>
+        <q-btn flat dense round icon="done_all" color="teal-9" @click="markAllAsRead" title="Mark all as read" />
+      </div>
+      <q-separator />
+      <q-scroll-area style="height: calc(100% - 60px);">
+        <q-list separator>
+          <q-item v-if="notifications.length === 0" class="text-center q-pa-lg text-grey">
+            No notifications yet.
+          </q-item>
+          <q-item
+            v-for="notif in notifications"
+            :key="notif._id"
+            clickable
+            @click="markAsRead(notif._id)"
+            :class="{ 'bg-teal-50': !notif.isRead }"
+            class="q-py-md"
+          >
+            <q-item-section avatar>
+              <q-icon :name="getNotifIcon(notif.type)" :color="getNotifColor(notif.type)" size="md" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="font-weight-bold" :class="{'text-black': !notif.isRead, 'text-grey-8': notif.isRead}">
+                {{ notif.title }}
+              </q-item-label>
+              <q-item-label caption lines="2">{{ notif.message }}</q-item-label>
+              <q-item-label caption class="q-mt-xs text-grey-5">{{ new Date(notif.createdAt).toLocaleString() }}</q-item-label>
+            </q-item-section>
+            <q-item-section side v-if="!notif.isRead">
+              <q-badge rounded color="teal-9" />
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
 
     <!-- Page Container -->
@@ -144,11 +207,38 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
+import { useNotifications } from '~/composables/useNotifications';
 
 const authStore = useAuthStore();
 const leftDrawerOpen = ref(false);
+const rightDrawerOpen = ref(false);
+const { notifications, unreadCount, fetchNotifications, markAsRead, markAllAsRead } = useNotifications();
+
+onMounted(() => {
+  if (authStore.isLoggedIn) {
+    fetchNotifications();
+  }
+});
+
+const getNotifIcon = (type) => {
+  switch(type) {
+    case 'success': return 'check_circle';
+    case 'warning': return 'warning';
+    case 'error': return 'error';
+    default: return 'info';
+  }
+};
+
+const getNotifColor = (type) => {
+  switch(type) {
+    case 'success': return 'positive';
+    case 'warning': return 'warning';
+    case 'error': return 'negative';
+    default: return 'primary';
+  }
+};
 
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
